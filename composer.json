@@ -1,0 +1,5 @@
+{
+    "name": "contao-community-alliance/build-system-tool-author-validation",
+    "description": "Check if all authors of a particular file are mentioned in the copyright header.",
+    "license": "MIT"
+}
