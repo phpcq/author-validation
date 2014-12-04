@@ -1,5 +1,46 @@
 {
     "name": "contao-community-alliance/build-system-tool-author-validation",
     "description": "Check if all authors of a particular file are mentioned in the copyright header.",
-    "license": "MIT"
+    "license": "MIT",
+    "authors": [
+        {
+            "name":"Tristan Lins",
+            "email":"tristan.lins@bit3.de",
+            "homepage":"http://bit3.de",
+            "role":"Developer"
+        }
+    ],
+    "support":{
+        "issues":"https://github.com/contao-community-alliance/build-system-tool-author-validation/issues",
+        "irc":"irc://irc.freenode.org/contao.dev",
+        "source":"https://github.com/contao-community-alliance/build-system-tool-author-validation"
+    },
+    "autoload": {
+        "psr-4": {
+            "ContaoCommunityAlliance\\BuildSystem\\Tool\\AuthorValidation\\" : "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ContaoCommunityAlliance\\BuildSystem\\Tool\\AuthorValidation\\Test\\" : "tests"
+        }
+    },
+    "require": {
+        "php": ">=5.3.4",
+        "contao-community-alliance/build-system-repository-git": "~1.0",
+        "symfony/console": "~2.3",
+        "symfony/finder": "~2.3"
+    },
+    "require-dev": {
+        "contao-community-alliance/build-system-all-tasks": "~1.0",
+        "contao-community-alliance/coding-standard": "~1.0"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    },
+    "bin": ["bin/check-author.php"],
+    "prefer-stable": true,
+    "minimum-stability": "dev"
 }
