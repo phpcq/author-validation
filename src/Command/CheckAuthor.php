@@ -153,7 +153,7 @@ class CheckAuthor extends Command
         $pathname = $dir . DIRECTORY_SEPARATOR . 'composer.json';
 
         if (!is_file($pathname)) {
-            return false;
+            return true;
         }
 
         $composerJson = file_get_contents($pathname);
@@ -200,7 +200,7 @@ class CheckAuthor extends Command
         $pathname = $dir . DIRECTORY_SEPARATOR . 'bower.json';
 
         if (!is_file($pathname)) {
-            return false;
+            return true;
         }
 
         $bowerJson = file_get_contents($pathname);
@@ -251,7 +251,7 @@ class CheckAuthor extends Command
         $pathname = $dir . DIRECTORY_SEPARATOR . 'packages.json';
 
         if (!is_file($pathname)) {
-            return false;
+            return true;
         }
 
         $packagesJson = file_get_contents($pathname);
