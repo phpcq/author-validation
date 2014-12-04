@@ -24,6 +24,7 @@ use ContaoCommunityAlliance\BuildSystem\Repository\GitRepository;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,6 +46,30 @@ class CheckAuthor extends Command
         $this
             ->setName('ccabs:tools:check-author')
             ->setDescription('Check that all authors are mentioned in each file.')
+            ->addOption(
+                'php-files',
+                null,
+                InputOption::VALUE_NONE,
+                'Validate @author annotations in PHP files'
+            )
+            ->addOption(
+                'composer',
+                null,
+                InputOption::VALUE_NONE,
+                'Validate authors in composer.json'
+            )
+            ->addOption(
+                'bower',
+                null,
+                InputOption::VALUE_NONE,
+                'Validate authors in bower.json'
+            )
+            ->addOption(
+                'packages',
+                null,
+                InputOption::VALUE_NONE,
+                'Validate authors in packages.json'
+            )
             ->addArgument(
                 'dir',
                 InputArgument::OPTIONAL,
@@ -128,7 +153,7 @@ class CheckAuthor extends Command
         $pathname = $dir . DIRECTORY_SEPARATOR . 'composer.json';
 
         if (!is_file($pathname)) {
-            return false;
+            return true;
         }
 
         $composerJson = file_get_contents($pathname);
@@ -175,7 +200,7 @@ class CheckAuthor extends Command
         $pathname = $dir . DIRECTORY_SEPARATOR . 'bower.json';
 
         if (!is_file($pathname)) {
-            return false;
+            return true;
         }
 
         $bowerJson = file_get_contents($pathname);
@@ -226,7 +251,7 @@ class CheckAuthor extends Command
         $pathname = $dir . DIRECTORY_SEPARATOR . 'packages.json';
 
         if (!is_file($pathname)) {
-            return false;
+            return true;
         }
 
         $packagesJson = file_get_contents($pathname);
@@ -311,13 +336,20 @@ class CheckAuthor extends Command
 
     /**
      * {@inheritDoc}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $dir     = realpath($input->getArgument('dir'));
-        $gitRoot = $this->determineGitRoot($dir);
-        $git     = new GitRepository($gitRoot);
-        $error   = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $validatePhpFiles     = $input->getOption('php-files');
+        $validateComposerJson = $input->getOption('composer');
+        $validateBowerJson    = $input->getOption('bower');
+        $validatePackagesJson = $input->getOption('packages');
+        $dir                  = realpath($input->getArgument('dir'));
+        $gitRoot              = $this->determineGitRoot($dir);
+        $git                  = new GitRepository($gitRoot);
+        $error                = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $git->getConfig()->setLogger(
@@ -325,11 +357,18 @@ class CheckAuthor extends Command
             );
         }
 
+        if (!$validatePhpFiles && !$validateComposerJson && !$validateBowerJson && !$validatePackagesJson) {
+            $error->writeln('<error>You must select at least one validation to run!</error>');
+            $error->writeln('validate-author.php [--php-files] [--composer] [--bower] [--packages]');
+
+            return 1;
+        }
+
         $failed = false;
-        $failed = !$this->validatePhpAuthors($dir, $git, $error) || $failed;
-        $failed = !$this->validateComposerAuthors($gitRoot, $git, $error) || $failed;
-        $failed = !$this->validateBowerAuthors($gitRoot, $git, $error) || $failed;
-        $failed = !$this->validateNodeAuthors($gitRoot, $git, $error) || $failed;
+        $failed = $validatePhpFiles && !$this->validatePhpAuthors($dir, $git, $error) || $failed;
+        $failed = $validateComposerJson && !$this->validateComposerAuthors($gitRoot, $git, $error) || $failed;
+        $failed = $validateBowerJson && !$this->validateBowerAuthors($gitRoot, $git, $error) || $failed;
+        $failed = $validatePackagesJson && !$this->validateNodeAuthors($gitRoot, $git, $error) || $failed;
 
         return $failed ? 1 : 0;
     }
