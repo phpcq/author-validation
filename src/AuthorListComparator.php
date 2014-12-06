@@ -28,13 +28,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AuthorListComparator
 {
     /**
-     * The list of authors to be ignored.
-     *
-     * @var string[]
-     */
-    protected $ignoredAuthors;
-
-    /**
      * The output to use for logging.
      *
      * @var OutputInterface
