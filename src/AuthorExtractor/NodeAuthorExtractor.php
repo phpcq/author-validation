@@ -78,4 +78,31 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
 
         return $mentionedAuthors;
     }
+
+    /**
+     * Set the author information in the json.
+     *
+     * @param array $json    The json data.
+     *
+     * @param array $authors The authors to set in the json.
+     *
+     * @return array The updated json array.
+     */
+    protected function setAuthors($json, $authors)
+    {
+        $key = (!isset($json['authors']['contributors'])) ? 'author' : 'contributors';
+
+        // FIXME: this does not correctly update the data as we have two arrays to search.
+
+        foreach ($this->calculateUpdatedAuthors($authors) as $author) {
+            list($name, $email) = explode(' <', $author);
+
+            $json[$key][] = array(
+                'name'     => trim($name),
+                'email'    => trim(substr($email, 0, -1)),
+            );
+        }
+
+        return $json;
+    }
 }

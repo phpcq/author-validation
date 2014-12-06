@@ -35,6 +35,20 @@ class AuthorListComparator
     protected $output;
 
     /**
+     * The diff tool to use.
+     *
+     * @var \Diff_Renderer_Abstract
+     */
+    protected $diff;
+
+    /**
+     * The patch file being generated.
+     *
+     * @var string
+     */
+    protected $patchSet;
+
+    /**
      * Create a new instance.
      *
      * @param OutputInterface $output The output interface to use for logging.
@@ -42,6 +56,77 @@ class AuthorListComparator
     public function __construct(OutputInterface $output)
     {
         $this->output = $output;
+    }
+
+    /**
+     * Set the flag if diffs shall be generated or not.
+     *
+     * @param bool $flag The flag to set (optional, default: boolean).
+     *
+     * @return AuthorListComparator
+     */
+    public function shallGeneratePatches($flag = true)
+    {
+        $this->diff = $flag ? new \Diff_Renderer_Text_Unified() : null;
+
+        return $this;
+    }
+
+    /**
+     * Retrieve the patch content collected.
+     *
+     * NOTE: you have to set shallGeneratePatches() first.
+     *
+     * @return null|string
+     */
+    public function getPatchSet()
+    {
+        return $this->diff ? $this->patchSet : null;
+    }
+
+    /**
+     * Handle the patching cycle for a extractor.
+     *
+     * @param AuthorExtractor $extractor The extractor to patch.
+     *
+     * @return bool True if the patch has been collected, false otherwise.
+     */
+    private function patchExtractor($extractor, $wantedAuthors)
+    {
+        if (!($this->diff && $extractor instanceof PatchingExtractor) ){
+            return false;
+        }
+
+        $original = explode("\n", $extractor->getBuffer());
+        $new      = explode("\n", $extractor->getBuffer($wantedAuthors));
+        $diff     = new \Diff($original, $new);
+        $patch    = $diff->render($this->diff);
+
+        if (empty($patch)) {
+            return false;
+        }
+
+        $patchFile = substr($extractor->getFilePath(), strlen($extractor->getBaseDir()));
+        if ($patchFile[0] == '/') {
+            $patchFile = substr($patchFile, 1);
+        }
+
+        /**
+         *
+         * diff --git a/bin/check-author.php b/bin/check-author.php
+         * index 6c031df..75a3d96 100755
+         * --- a/bin/check-author.php
+         * +++ b/bin/check-author.php
+         * @@ -12,7 +12,6 @@
+         *
+         */
+
+        $this->patchSet[] =
+            'diff ' . $patchFile . ' ' .$patchFile . "\n" .
+            '--- ' . $patchFile . "\n" .
+            '+++ ' . $patchFile . "\n"  . $patch;
+
+        return true;
     }
 
     /**
@@ -100,6 +185,10 @@ class AuthorListComparator
                 )
             );
             $validates = false;
+        }
+
+        if (!$validates) {
+            $this->patchExtractor($current, $wantedAuthors);
         }
 
         return $validates;

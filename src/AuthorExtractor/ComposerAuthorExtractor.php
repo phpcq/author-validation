@@ -69,4 +69,29 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
 
         return $mentionedAuthors;
     }
+
+    /**
+     * Set the author information in the json.
+     *
+     * @param array $json    The json data.
+     *
+     * @param array $authors The authors to set in the json.
+     *
+     * @return array The updated json array.
+     */
+    protected function setAuthors($json, $authors)
+    {
+        $json['authors'] = array();
+        foreach ($this->calculateUpdatedAuthors($authors) as $author) {
+            list($name, $email) = explode(' <', $author);
+
+            $json['authors'][] = array(
+                'name'     => trim($name),
+                'email'    => trim(substr($email, 0, -1)),
+                'role'     => 'Developer'
+            );
+        }
+
+        return $json;
+    }
 }

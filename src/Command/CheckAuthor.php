@@ -79,6 +79,12 @@ class CheckAuthor extends Command
                 'authors to ignore (format: "John Doe <j.doe@acme.org>"',
                 array()
             )
+            ->addOption(
+                'diff',
+                null,
+                InputOption::VALUE_NONE,
+                'create output in diff format instead of mentioning what\'s missing/superfluous.'
+            )
             ->addArgument(
                 'dir',
                 InputArgument::OPTIONAL,
@@ -90,27 +96,28 @@ class CheckAuthor extends Command
     /**
      * Find PHP files, read the authors and validate against the git log of each file.
      *
-     * @param string          $dir     The directory to search files in.
+     * @param string               $dir        The directory to search files in.
      *
-     * @param string[]        $ignores The authors to be ignored from the git repository.
+     * @param string[]             $ignores    The authors to be ignored from the git repository.
      *
-     * @param OutputInterface $output  The output.
+     * @param OutputInterface      $output     The output.
+     *
+     * @param AuthorListComparator $comparator The comparator performing the comparisons.
      *
      * @return bool
      */
-    private function validatePhpAuthors($dir, $ignores, OutputInterface $output)
+    private function validatePhpAuthors($dir, $ignores, OutputInterface $output, AuthorListComparator $comparator)
     {
         $finder = new Finder();
 
         $finder->in($dir)->notPath('/vendor/')->files()->name('*.php');
 
         $invalidates = false;
-        $comparator  = new AuthorListComparator($output);
 
         /** @var \SplFileInfo[] $finder */
         foreach ($finder as $file) {
             /** @var \SplFileInfo $file */
-            $phpExtractor = new PhpDocAuthorExtractor($file->getPathname(), $output);
+            $phpExtractor = new PhpDocAuthorExtractor($dir, $file->getPathname(), $output);
             $gitExtractor = new GitAuthorExtractor($file->getPathname(), $output);
             $gitExtractor->setIgnoredAuthors($ignores);
 
@@ -159,6 +166,7 @@ class CheckAuthor extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $diff       = $input->getOption('diff');
         $ignores    = $input->getOption('ignore');
         $dir        = realpath($input->getArgument('dir'));
         $error      = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
@@ -177,6 +185,7 @@ class CheckAuthor extends Command
         $gitExtractor->setIgnoredAuthors($ignores);
 
         $comparator = new AuthorListComparator($error);
+        $comparator->shallGeneratePatches($diff);
 
         foreach ($extractors as $extractor) {
             $failed = !$comparator->compare($extractor, $gitExtractor) || $failed;
@@ -184,7 +193,12 @@ class CheckAuthor extends Command
 
         // Finally check the php files.
 
-        $failed = ($input->getOption('php-files') && !$this->validatePhpAuthors($dir, $ignores, $error)) || $failed;
+        $failed = ($input->getOption('php-files') && !$this->validatePhpAuthors($dir, $ignores, $error, $comparator))
+                  || $failed;
+
+        if ($failed && $diff) {
+            $output->writeln($comparator->getPatchSet());
+        }
 
         return $failed ? 1 : 0;
     }

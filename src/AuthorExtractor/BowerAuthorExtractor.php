@@ -73,4 +73,23 @@ class BowerAuthorExtractor extends JsonAuthorExtractor
 
         return $mentionedAuthors;
     }
+
+    /**
+     * Set the author information in the json.
+     *
+     * @param array $json    The json data.
+     *
+     * @param array $authors The authors to set in the json.
+     *
+     * @return array The updated json array.
+     */
+    protected function setAuthors($json, $authors)
+    {
+        $json['authors'] = array();
+        foreach ($this->calculateUpdatedAuthors($authors) as $author) {
+            $json['authors'][] = $author;
+        }
+
+        return $json;
+    }
 }
