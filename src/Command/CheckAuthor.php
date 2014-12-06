@@ -12,6 +12,7 @@
  *
  * @package    contao-community-alliance/build-system-tool-author-validation
  * @author     Tristan Lins <tristan.lins@bit3.de>
+ * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @copyright  Contao Community Alliance <https://c-c-a.org>
  * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
  * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
@@ -20,12 +21,14 @@
 
 namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Command;
 
-use ContaoCommunityAlliance\BuildSystem\Repository\GitRepository;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorListComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -69,6 +72,13 @@ class CheckAuthor extends Command
                 InputOption::VALUE_NONE,
                 'Validate authors in packages.json'
             )
+            ->addOption(
+                'ignore',
+                null,
+                (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
+                'authors to ignore (format: "John Doe <j.doe@acme.org>"',
+                array()
+            )
             ->addArgument(
                 'dir',
                 InputArgument::OPTIONAL,
@@ -78,294 +88,67 @@ class CheckAuthor extends Command
     }
 
     /**
-     * Determine the git root, starting from arbitrary directory.
-     *
-     * @param string $path The start path.
-     *
-     * @return string The git root path.
-     *
-     * @throws \RuntimeException If the git root could not determined.
-     */
-    private function determineGitRoot($path)
-    {
-        // @codingStandardsIgnoreStart
-        while (strlen($path) > 1) {
-            // @codingStandardsIgnoreEnd
-            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
-                return $path;
-            }
-
-            $path = dirname($path);
-        }
-
-        throw new \RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
-    }
-
-    /**
-     * Ensure the list is case insensitively unique and that the authors are sorted.
-     *
-     * @param string[] $authors The authors to work on.
-     *
-     * @return string[] The filtered and sorted list.
-     */
-    private function beautifyAuthorList($authors)
-    {
-        $authors = array_intersect_key($authors, array_unique(array_map('strtolower', $authors)));
-        usort($authors, 'strcasecmp');
-
-        $mapped = array();
-        foreach ($authors as $author) {
-            $mapped[strtolower($author)] = $author;
-        }
-
-        return $mapped;
-    }
-
-    /**
      * Find PHP files, read the authors and validate against the git log of each file.
      *
-     * @param string        $path The directory to search files in.
+     * @param string          $dir     The directory to search files in.
      *
-     * @param GitRepository $git  The git repository.
+     * @param string[]        $ignores The authors to be ignored from the git repository.
      *
-     * @return string[]
-     */
-    private function getAuthorsFromGit($path, $git, $recursive = true)
-    {
-        // FIXME: handle excludes here.
-        if ($recursive) {
-            $authors = $git->log()->format('%aN <%ae>')->follow()->execute($path);
-        } else {
-            $authors = $git->log()->format('%aN <%ae>')->execute();
-        }
-
-        $authors = preg_split('~[\r\n]+~', $authors);
-
-        return $this->beautifyAuthorList($authors);
-    }
-
-    /**
-     * Find PHP files, read the authors and validate against the git log of each file.
-     *
-     * @param string          $dir    The directory to search files in.
-     * @param GitRepository   $git    The git repository.
-     * @param OutputInterface $output The output.
+     * @param OutputInterface $output  The output.
      *
      * @return bool
      */
-    private function validatePhpAuthors($dir, GitRepository $git, OutputInterface $output)
+    private function validatePhpAuthors($dir, $ignores, OutputInterface $output)
     {
         $finder = new Finder();
 
         $finder->in($dir)->notPath('/vendor/')->files()->name('*.php');
 
         $invalidates = false;
+        $comparator  = new AuthorListComparator($output);
 
+        /** @var \SplFileInfo[] $finder */
         foreach ($finder as $file) {
             /** @var \SplFileInfo $file */
+            $phpExtractor = new PhpDocAuthorExtractor($file->getPathname(), $output);
+            $gitExtractor = new GitAuthorExtractor($file->getPathname(), $output);
+            $gitExtractor->setIgnoredAuthors($ignores);
 
-            $mentionedAuthors = file($file);
-            $mentionedAuthors = preg_filter('~.*\*\s@author\s+(.*)\s*~', '$1', $mentionedAuthors);
-            $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
-            $authors          = $this->getAuthorsFromGit($file->getPathname(), $git, true);
-            $invalidates      = !$this->validateAuthors($file->getPathname(), $mentionedAuthors, $authors, $output)
-                                || $invalidates;
+            $invalidates = !$comparator->compare($phpExtractor, $gitExtractor) || $invalidates;
         }
 
         return !$invalidates;
     }
 
     /**
-     * Read the composer.json, if exist and validate the authors in the file against the git log.
+     * Create all source extractors as specified on the command line.
      *
-     * @param string          $dir    The directory to search for the composer.json.
-     * @param GitRepository   $git    The git repository.
-     * @param OutputInterface $output The output.
+     * @param InputInterface  $input  The input interface.
      *
-     * @return bool
+     * @param OutputInterface $output The output interface to use for logging.
+     *
+     * @param string          $dir    The base directory.
+     *
+     * @return AuthorExtractor[]
      */
-    private function validateComposerAuthors($dir, GitRepository $git, OutputInterface $output)
+    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $dir)
     {
-        $pathname = $dir . DIRECTORY_SEPARATOR . 'composer.json';
-
-        if (!is_file($pathname)) {
-            return true;
-        }
-
-        $composerJson = file_get_contents($pathname);
-        $composerJson = (array) json_decode($composerJson, true);
-
-        if (isset($composerJson['authors']) && is_array($composerJson['authors'])) {
-            $mentionedAuthors = array_map(
-                function ($author) {
-                    if (isset($author['email'])) {
-                        return sprintf(
-                            '%s <%s>',
-                            $author['name'],
-                            $author['email']
-                        );
-                    }
-
-                    return $author['name'];
-                },
-                $composerJson['authors']
-            );
-        } else {
-            $mentionedAuthors = array();
-        }
-
-        $authors          = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
-        $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
-
-        return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
-    }
-
-    /**
-     * Read the bower.json, if exist and validate the authors in the file against the git log.
-     *
-     * @param string          $dir    The directory to search for the bower.json.
-     * @param GitRepository   $git    The git repository.
-     * @param OutputInterface $output The output.
-     *
-     * @return bool
-     */
-    private function validateBowerAuthors($dir, GitRepository $git, OutputInterface $output)
-    {
-        $pathname = $dir . DIRECTORY_SEPARATOR . 'bower.json';
-
-        if (!is_file($pathname)) {
-            return true;
-        }
-
-        $bowerJson = file_get_contents($pathname);
-        $bowerJson = (array) json_decode($bowerJson, true);
-
-        if (isset($bowerJson['authors']) && is_array($bowerJson['authors'])) {
-            $mentionedAuthors = array_map(
-                function ($author) {
-                    if (is_string($author)) {
-                        return $author;
-                    }
-
-                    if (isset($author['email'])) {
-                        return sprintf(
-                            '%s <%s>',
-                            $author['name'],
-                            $author['email']
-                        );
-                    }
-
-                    return $author['name'];
-                },
-                $bowerJson['authors']
-            );
-        } else {
-            $mentionedAuthors = array();
-        }
-
-        $authors          = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
-        $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
-
-        return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
-    }
-
-    /**
-     * Read the packages.json, if exist and validate the authors in the file against the git log.
-     *
-     * @param string          $dir    The directory to search for the packages.json.
-     * @param GitRepository   $git    The git repository.
-     * @param OutputInterface $output The output.
-     *
-     * @return bool
-     */
-    private function validateNodeAuthors($dir, GitRepository $git, OutputInterface $output)
-    {
-        $pathname = $dir . DIRECTORY_SEPARATOR . 'packages.json';
-
-        if (!is_file($pathname)) {
-            return true;
-        }
-
-        $packagesJson = file_get_contents($pathname);
-        $packagesJson = (array) json_decode($packagesJson, true);
-
-        $mentionedAuthors = array();
-
-        if (isset($packagesJson['author'])) {
-            if (isset($packagesJson['author']['email'])) {
-                $mentionedAuthors[] = sprintf(
-                    '%s <%s>',
-                    $packagesJson['author']['name'],
-                    $packagesJson['author']['email']
-                );
-            } else {
-                $mentionedAuthors[] = $packagesJson['author']['name'];
+        // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
+        $extractors = array();
+        foreach (array(
+            'bower' =>
+                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
+            'composer' =>
+                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
+            'packages' =>
+                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
+                 ) as $option => $class) {
+            if ($input->getOption($option)) {
+                $extractors[$option] = new $class($dir, $output);
             }
         }
 
-        if (isset($packagesJson['contributors'])) {
-            foreach ($packagesJson['contributors'] as $contributor) {
-                if (isset($contributor['email'])) {
-                    $mentionedAuthors[] = sprintf(
-                        '%s <%s>',
-                        $contributor['name'],
-                        $contributor['email']
-                    );
-                } else {
-                    $mentionedAuthors[] = $contributor['name'];
-                }
-            }
-        }
-
-        $authors          = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
-        $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
-
-        return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
-    }
-
-    /**
-     * Validate mentioned and real authors against each other.
-     *
-     * @param string          $pathname         The source file pathname.
-     * @param array           $mentionedAuthors List of mentioned authors.
-     * @param array           $authors          List of real authors, read from git.
-     * @param OutputInterface $output           The output to write the error messages to.
-     *
-     * @return bool
-     */
-    private function validateAuthors($pathname, array $mentionedAuthors, array $authors, OutputInterface $output)
-    {
-        $validates       = true;
-        $wasteMentions   = array_diff_key($mentionedAuthors, $authors);
-        $missingMentions = array_diff_key($authors, $mentionedAuthors);
-
-        if (count($wasteMentions)) {
-            $output->writeln(
-                sprintf(
-                    'The file <info>%s</info> mention authors that are unnecessary:' .
-                    PHP_EOL .
-                    '<comment>%s</comment>',
-                    $pathname,
-                    implode(PHP_EOL, $wasteMentions)
-                )
-            );
-            $validates = false;
-        }
-
-        if (count($missingMentions)) {
-            $output->writeln(
-                sprintf(
-                    'The file <info>%s</info> miss mention of authors:' .
-                    PHP_EOL .
-                    '<comment>%s</comment>',
-                    $pathname,
-                    implode(PHP_EOL, $missingMentions)
-                )
-            );
-            $validates = false;
-        }
-
-        return $validates;
+        return $extractors;
     }
 
     /**
@@ -376,22 +159,12 @@ class CheckAuthor extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $validatePhpFiles     = $input->getOption('php-files');
-        $validateComposerJson = $input->getOption('composer');
-        $validateBowerJson    = $input->getOption('bower');
-        $validatePackagesJson = $input->getOption('packages');
-        $dir                  = realpath($input->getArgument('dir'));
-        $gitRoot              = $this->determineGitRoot($dir);
-        $git                  = new GitRepository($gitRoot);
-        $error                = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $ignores    = $input->getOption('ignore');
+        $dir        = realpath($input->getArgument('dir'));
+        $error      = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
+        $extractors = $this->createSourceExtractors($input, $error, $dir);
 
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $git->getConfig()->setLogger(
-                new ConsoleLogger($output)
-            );
-        }
-
-        if (!$validatePhpFiles && !$validateComposerJson && !$validateBowerJson && !$validatePackagesJson) {
+        if (empty($extractors)) {
             $error->writeln('<error>You must select at least one validation to run!</error>');
             $error->writeln('validate-author.php [--php-files] [--composer] [--bower] [--packages]');
 
@@ -399,10 +172,19 @@ class CheckAuthor extends Command
         }
 
         $failed = false;
-        $failed = $validatePhpFiles && !$this->validatePhpAuthors($dir, $git, $error) || $failed;
-        $failed = $validateComposerJson && !$this->validateComposerAuthors($gitRoot, $git, $error) || $failed;
-        $failed = $validateBowerJson && !$this->validateBowerAuthors($gitRoot, $git, $error) || $failed;
-        $failed = $validatePackagesJson && !$this->validateNodeAuthors($gitRoot, $git, $error) || $failed;
+
+        $gitExtractor = new GitAuthorExtractor($dir, $error);
+        $gitExtractor->setIgnoredAuthors($ignores);
+
+        $comparator = new AuthorListComparator($error);
+
+        foreach ($extractors as $extractor) {
+            $failed = !$comparator->compare($extractor, $gitExtractor) || $failed;
+        }
+
+        // Finally check the php files.
+
+        $failed = ($input->getOption('php-files') && !$this->validatePhpAuthors($dir, $ignores, $error)) || $failed;
 
         return $failed ? 1 : 0;
     }

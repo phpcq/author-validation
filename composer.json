@@ -8,6 +8,12 @@
             "email":"tristan.lins@bit3.de",
             "homepage":"http://bit3.de",
             "role":"Developer"
+        },
+        {
+            "name":"Christian Schiffler",
+            "email":"c.schiffler@cyberspectrum.de",
+            "homepage":"http://www.cyberspectrum.de",
+            "role":"Developer"
         }
     ],
     "support":{
