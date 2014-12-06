@@ -29,7 +29,6 @@ use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * Class to check the mentioned authors.
@@ -114,7 +113,12 @@ class CheckAuthor extends Command
         $authors = array_intersect_key($authors, array_unique(array_map('strtolower', $authors)));
         usort($authors, 'strcasecmp');
 
-        return $authors;
+        $mapped = array();
+        foreach ($authors as $author) {
+            $mapped[strtolower($author)] = $author;
+        }
+
+        return $mapped;
     }
 
     /**
@@ -210,7 +214,8 @@ class CheckAuthor extends Command
             $mentionedAuthors = array();
         }
 
-        $authors = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
+        $authors          = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
+        $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
 
         return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
     }
@@ -258,7 +263,8 @@ class CheckAuthor extends Command
             $mentionedAuthors = array();
         }
 
-        $authors = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
+        $authors          = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
+        $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
 
         return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
     }
@@ -311,7 +317,8 @@ class CheckAuthor extends Command
             }
         }
 
-        $authors = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
+        $authors          = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
+        $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
 
         return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
     }
@@ -329,13 +336,15 @@ class CheckAuthor extends Command
     private function validateAuthors($pathname, array $mentionedAuthors, array $authors, OutputInterface $output)
     {
         $validates       = true;
-        $wasteMentions   = array_diff($mentionedAuthors, $authors);
-        $missingMentions = array_diff($authors, $mentionedAuthors);
+        $wasteMentions   = array_diff_key($mentionedAuthors, $authors);
+        $missingMentions = array_diff_key($authors, $mentionedAuthors);
 
         if (count($wasteMentions)) {
             $output->writeln(
                 sprintf(
-                    'The file <info>%s</info> mention authors that are unnecessary: <comment>%s</comment>',
+                    'The file <info>%s</info> mention authors that are unnecessary:' .
+                    PHP_EOL .
+                    '<comment>%s</comment>',
                     $pathname,
                     implode(PHP_EOL, $wasteMentions)
                 )
@@ -346,7 +355,9 @@ class CheckAuthor extends Command
         if (count($missingMentions)) {
             $output->writeln(
                 sprintf(
-                    'The file <info>%s</info> miss mention of authors: <comment>%s</comment>',
+                    'The file <info>%s</info> miss mention of authors:' .
+                    PHP_EOL .
+                    '<comment>%s</comment>',
                     $pathname,
                     implode(PHP_EOL, $missingMentions)
                 )
