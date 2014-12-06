@@ -161,7 +161,7 @@ class CheckAuthor extends Command
             /** @var \SplFileInfo $file */
 
             $mentionedAuthors = file($file);
-            $mentionedAuthors = preg_filter('~.*@author\s+(.*)\s*~', '$1', $mentionedAuthors);
+            $mentionedAuthors = preg_filter('~.*\*\s@author\s+(.*)\s*~', '$1', $mentionedAuthors);
             $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
             $authors          = $this->getAuthorsFromGit($file->getPathname(), $git, true);
             $invalidates      = !$this->validateAuthors($file->getPathname(), $mentionedAuthors, $authors, $output)
