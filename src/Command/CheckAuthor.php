@@ -103,6 +103,44 @@ class CheckAuthor extends Command
     }
 
     /**
+     * Ensure the list is case insensitively unique and that the authors are sorted.
+     *
+     * @param string[] $authors The authors to work on.
+     *
+     * @return string[] The filtered and sorted list.
+     */
+    private function beautifyAuthorList($authors)
+    {
+        $authors = array_intersect_key($authors, array_unique(array_map('strtolower', $authors)));
+        usort($authors, 'strcasecmp');
+
+        return $authors;
+    }
+
+    /**
+     * Find PHP files, read the authors and validate against the git log of each file.
+     *
+     * @param string        $path The directory to search files in.
+     *
+     * @param GitRepository $git  The git repository.
+     *
+     * @return string[]
+     */
+    private function getAuthorsFromGit($path, $git, $recursive = true)
+    {
+        // FIXME: handle excludes here.
+        if ($recursive) {
+            $authors = $git->log()->format('%aN <%ae>')->follow()->execute($path);
+        } else {
+            $authors = $git->log()->format('%aN <%ae>')->execute();
+        }
+
+        $authors = preg_split('~[\r\n]+~', $authors);
+
+        return $this->beautifyAuthorList($authors);
+    }
+
+    /**
      * Find PHP files, read the authors and validate against the git log of each file.
      *
      * @param string          $dir    The directory to search files in.
@@ -124,16 +162,10 @@ class CheckAuthor extends Command
 
             $mentionedAuthors = file($file);
             $mentionedAuthors = preg_filter('~.*@author\s+(.*)\s*~', '$1', $mentionedAuthors);
-            usort($mentionedAuthors, 'strcasecmp');
-            $mentionedAuthors = array_unique($mentionedAuthors);
-
-            $authors = $git->log()->format('%aN <%ae>')->follow()->execute($file->getPathname());
-            $authors = preg_split('~[\r\n]+~', $authors);
-            usort($authors, 'strcasecmp');
-            $authors = array_unique($authors);
-
-            $invalidates = !$this->validateAuthors($file->getPathname(), $mentionedAuthors, $authors, $output)
-                           || $invalidates;
+            $mentionedAuthors = $this->beautifyAuthorList($mentionedAuthors);
+            $authors          = $this->getAuthorsFromGit($file->getPathname(), $git, true);
+            $invalidates      = !$this->validateAuthors($file->getPathname(), $mentionedAuthors, $authors, $output)
+                                || $invalidates;
         }
 
         return !$invalidates;
@@ -178,10 +210,7 @@ class CheckAuthor extends Command
             $mentionedAuthors = array();
         }
 
-        $authors = $git->log()->format('%aN <%ae>')->execute();
-        $authors = preg_split('~[\r\n]+~', $authors);
-        usort($authors, 'strcasecmp');
-        $authors = array_unique($authors);
+        $authors = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
 
         return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
     }
@@ -229,10 +258,7 @@ class CheckAuthor extends Command
             $mentionedAuthors = array();
         }
 
-        $authors = $git->log()->format('%aN <%ae>')->execute();
-        $authors = preg_split('~[\r\n]+~', $authors);
-        usort($authors, 'strcasecmp');
-        $authors = array_unique($authors);
+        $authors = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
 
         return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
     }
@@ -285,10 +311,7 @@ class CheckAuthor extends Command
             }
         }
 
-        $authors = $git->log()->format('%aN <%ae>')->execute();
-        $authors = preg_split('~[\r\n]+~', $authors);
-        usort($authors, 'strcasecmp');
-        $authors = array_unique($authors);
+        $authors = $this->getAuthorsFromGit($git->getRepositoryPath(), $git);
 
         return $this->validateAuthors($pathname, $mentionedAuthors, $authors, $output);
     }
