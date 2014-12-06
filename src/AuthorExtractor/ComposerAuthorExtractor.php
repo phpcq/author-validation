@@ -23,7 +23,7 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtrac
 /**
  * Extract the author information from a composer.json file.
  */
-class ComposerAuthorExtractor extends AbstractAuthorExtractor
+class ComposerAuthorExtractor extends JsonAuthorExtractor
 {
     /**
      * Retrieve the file path to use in reporting.
@@ -42,14 +42,11 @@ class ComposerAuthorExtractor extends AbstractAuthorExtractor
      */
     protected function doExtract()
     {
-        $pathname = $this->getFilePath();
+        $composerJson = $this->loadFile();
 
-        if (!is_file($pathname)) {
+        if ($composerJson === null) {
             return null;
         }
-
-        $composerJson = file_get_contents($pathname);
-        $composerJson = (array) json_decode($composerJson, true);
 
         if (!(isset($composerJson['authors']) && is_array($composerJson['authors']))) {
             return array();

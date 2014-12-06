@@ -33,6 +33,13 @@ interface AuthorExtractor
     public function getFilePath();
 
     /**
+     * Retrieve the base dir of this extractor.
+     *
+     * @return string
+     */
+    public function getBaseDir();
+
+    /**
      * Set the authors to be ignored.
      *
      * @param array $ignoredAuthors The authors to be ignored.

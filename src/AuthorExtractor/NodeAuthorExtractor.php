@@ -23,7 +23,7 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtrac
 /**
  * Extract the author information from a nodeJs packages.json file.
  */
-class NodeAuthorExtractor extends AbstractAuthorExtractor
+class NodeAuthorExtractor extends JsonAuthorExtractor
 {
     /**
      * Retrieve the file path to use in reporting.
@@ -42,14 +42,11 @@ class NodeAuthorExtractor extends AbstractAuthorExtractor
      */
     protected function doExtract()
     {
-        $pathname = $this->getFilePath();
+        $packagesJson = $this->loadFile();
 
-        if (!is_file($pathname)) {
+        if ($packagesJson === null) {
             return null;
         }
-
-        $packagesJson = file_get_contents($pathname);
-        $packagesJson = (array) json_decode($packagesJson, true);
 
         $mentionedAuthors = array();
 

@@ -106,7 +106,7 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     /**
      * Retrieve the contained authors.
      *
-     * @return string
+     * @return string[]
      */
     public function extractAuthors()
     {
