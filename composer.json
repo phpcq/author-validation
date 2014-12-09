@@ -8,6 +8,12 @@
             "email":"tristan.lins@bit3.de",
             "homepage":"http://bit3.de",
             "role":"Developer"
+        },
+        {
+            "name":"Christian Schiffler",
+            "email":"c.schiffler@cyberspectrum.de",
+            "homepage":"http://www.cyberspectrum.de",
+            "role":"Developer"
         }
     ],
     "support":{
@@ -29,7 +35,8 @@
         "php": ">=5.3.4",
         "contao-community-alliance/build-system-repository-git": "~1.0",
         "symfony/console": "~2.3",
-        "symfony/finder": "~2.3"
+        "symfony/finder": "~2.3",
+        "phpspec/php-diff": "~1.0"
     },
     "require-dev": {
         "contao-community-alliance/build-system-all-tasks": "~1.0",

@@ -13,7 +13,7 @@
 >
     <testsuites>
         <testsuite name="Build system author validation test suite">
-            <directory>./tests/Command</directory>
+            <directory>./tests</directory>
         </testsuite>
     </testsuites>
 
