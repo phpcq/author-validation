@@ -87,13 +87,15 @@ class AuthorListComparator
     /**
      * Handle the patching cycle for a extractor.
      *
-     * @param AuthorExtractor $extractor The extractor to patch.
+     * @param AuthorExtractor $extractor     The extractor to patch.
+     *
+     * @param array           $wantedAuthors The authors that shall be contained in the result.
      *
      * @return bool True if the patch has been collected, false otherwise.
      */
     private function patchExtractor($extractor, $wantedAuthors)
     {
-        if (!($this->diff && $extractor instanceof PatchingExtractor) ){
+        if (!($this->diff && $extractor instanceof PatchingExtractor)) {
             return false;
         }
 

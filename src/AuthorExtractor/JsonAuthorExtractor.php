@@ -30,6 +30,8 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
 {
     /**
      * Read the composer.json file and return it as array.
+     *
+     * @return array
      */
     protected function loadFile()
     {
@@ -78,8 +80,7 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
     {
         $json = $this->loadFile();
 
-        if ($authors)
-        {
+        if ($authors) {
             $json = $this->setAuthors($json, $authors);
         }
 
