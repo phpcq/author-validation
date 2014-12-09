@@ -40,6 +40,7 @@ set_error_handler(
 
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Command\CheckAuthor;
 use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 
 class CheckAuthorApplication extends Application
@@ -47,9 +48,11 @@ class CheckAuthorApplication extends Application
     /**
      * Gets the name of the command based on input.
      *
-     * @param InputInterface $input The input interface
+     * @param InputInterface $input The input interface.
      *
      * @return string The command name
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function getCommandName(InputInterface $input)
     {
@@ -73,8 +76,9 @@ class CheckAuthorApplication extends Application
     }
 
     /**
-     * Overridden so that the application doesn't expect the command
-     * name to be the first argument.
+     * Overridden so that the application doesn't expect the command name to be the first argument.
+     *
+     * @return InputDefinition The InputDefinition instance
      */
     public function getDefinition()
     {

@@ -21,6 +21,8 @@
 namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Json;
 
 /**
+ * Simple json-encoder and -formatter.
+ *
  * Formats json strings used for php < 5.4 because the json_encode doesn't
  * supports the flags JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
  * in these versions
@@ -31,13 +33,20 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Json;
 class JsonFormatter
 {
     /**
+     * Copied and altered from composer.
+     *
      * This code is based on the function found at:
      *  http://recursive-design.com/blog/2008/03/11/format-json-with-php/
      *
      * Originally licensed under MIT by Dave Perrett <mail@recursive-design.com>
      *
-     * @param  array  $data
+     * @param array $data The data to encode.
+     *
      * @return string
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public static function format($data)
     {
@@ -46,7 +55,10 @@ class JsonFormatter
             // JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
             $json = json_encode($data, 448);
             //  compact brackets to follow recent php versions
-            if (PHP_VERSION_ID < 50428 || (PHP_VERSION_ID >= 50500 && PHP_VERSION_ID < 50512) || (defined('JSON_C_VERSION') && version_compare(phpversion('json'), '1.3.6', '<'))) {
+            if (PHP_VERSION_ID < 50428
+                || (PHP_VERSION_ID >= 50500 && PHP_VERSION_ID < 50512)
+                || (defined('JSON_C_VERSION') && version_compare(phpversion('json'), '1.3.6', '<'))
+            ) {
                 $json = preg_replace('/\[\s+\]/', '[]', $json);
                 $json = preg_replace('/\{\s+\}/', '{}', $json);
             }
@@ -55,14 +67,14 @@ class JsonFormatter
 
         $json = json_encode($data);
 
-        $result = '';
-        $pos = 0;
-        $strLen = strlen($json);
-        $indentStr = '    ';
-        $newLine = "\n";
+        $result      = '';
+        $pos         = 0;
+        $strLen      = strlen($json);
+        $indentStr   = '    ';
+        $newLine     = "\n";
         $outOfQuotes = true;
-        $buffer = '';
-        $noescape = true;
+        $buffer      = '';
+        $noescape    = true;
 
         for ($i = 0; $i < $strLen; $i++) {
             // Grab the next character in the string
@@ -74,19 +86,19 @@ class JsonFormatter
             }
 
             if (!$outOfQuotes) {
-                $buffer .= $char;
+                $buffer  .= $char;
                 $noescape = '\\' === $char ? !$noescape : true;
                 continue;
             } elseif ('' !== $buffer) {
                 $buffer = str_replace('\\/', '/', $buffer);
 
                 if (function_exists('mb_convert_encoding')) {
-                    // http://stackoverflow.com/questions/2934563/how-to-decode-unicode-escape-sequences-like-u00ed-to-proper-utf-8-encoded-cha
+                    // See thread at http://stackoverflow.com/questions/2934563
                     $buffer = preg_replace_callback('/(\\\\+)u([0-9a-f]{4})/i', function ($match) {
-                        $l = strlen($match[1]);
+                        $length = strlen($match[1]);
 
-                        if ($l % 2) {
-                            return str_repeat('\\', $l - 1) . mb_convert_encoding(
+                        if (($length % 2)) {
+                            return str_repeat('\\', ($length - 1)) . mb_convert_encoding(
                                 pack('H*', $match[2]),
                                 'UTF-8',
                                 'UCS-2BE'
@@ -98,7 +110,7 @@ class JsonFormatter
                 }
 
                 $result .= $buffer.$char;
-                $buffer = '';
+                $buffer  = '';
                 continue;
             }
 
@@ -107,7 +119,7 @@ class JsonFormatter
                 $char .= ' ';
             } elseif (('}' === $char || ']' === $char)) {
                 $pos--;
-                $prevChar = substr($json, $i - 1, 1);
+                $prevChar = substr($json, ($i - 1), 1);
 
                 if ('{' !== $prevChar && '[' !== $prevChar) {
                     // If this character is the end of an element,
@@ -117,7 +129,7 @@ class JsonFormatter
                         $result .= $indentStr;
                     }
                 } else {
-                    // Collapse empty {} and []
+                    // Collapse all empty braces to have shorter output. This applies to {} and [].
                     $result = rtrim($result);
                 }
             }

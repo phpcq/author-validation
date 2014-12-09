@@ -11,7 +11,7 @@
  * This project is provided in good faith and hope to be usable by anyone.
  *
  * @package    contao-community-alliance/build-system-tool-author-validation
- * @author     Christan Schiffler <c.schiffler@cyberspectrum.de>
+ * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @copyright  Contao Community Alliance <https://c-c-a.org>
  * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
  * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
@@ -111,10 +111,9 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
         );
         $firstDocBlock = reset($docBlocks);
 
-        $docBlock = substr($content, 0, $closing+2);
+        $docBlock = substr($content, 0, ($closing + 2));
 
-        if ($authors)
-        {
+        if ($authors) {
             return $this->setAuthors($docBlock, $authors);
         }
 
@@ -124,9 +123,9 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
     /**
      * Set the author information in doc block.
      *
-     * @param array $docBlock    The doc block.
+     * @param array $docBlock The doc block.
      *
-     * @param array $authors The authors to set in the doc block.
+     * @param array $authors  The authors to set in the doc block.
      *
      * @return array The updated doc block.
      */
@@ -143,12 +142,13 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
                 continue;
             }
             $lastAuthor = $number;
-            $suffix     = trim(substr($line, strpos($line, '@author') + 7));
-            $indention  = substr($line, 0, strlen($line) - strlen($suffix));
+            $suffix     = trim(substr($line, (strpos($line, '@author') + 7)));
+            $indention  = substr($line, 0, (strlen($line) - strlen($suffix)));
 
             $found = false;
             foreach ($newAuthors as $newIndex => $author) {
                 list($name, $email) = explode(' <', $author);
+
                 $name  = trim($name);
                 $email = trim(substr($email, 0, -1));
                 if ((strpos($line, $name) !== false) && (strpos($line, $email) !== false)) {
@@ -172,7 +172,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
             }
 
             if ($lastAuthor == 0) {
-                $lastAuthor = count($lines) - 2;
+                $lastAuthor = (count($lines) - 2);
             }
             while ($author = array_shift($newAuthors)) {
                 $lines[$lastAuthor++] = $indention . $author;
