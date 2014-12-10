@@ -159,6 +159,28 @@ class CheckAuthor extends Command
     }
 
     /**
+     * Process the given extractors.
+     *
+     * @param AuthorExtractor[]    $extractors The extractors.
+     *
+     * @param AuthorExtractor      $reference  The extractor to use as reference.
+     *
+     * @param AuthorListComparator $comparator The comparator to use.
+     *
+     * @return bool
+     */
+    private function handleExtractors($extractors, AuthorExtractor $reference, AuthorListComparator $comparator)
+    {
+        $failed = false;
+
+        foreach ($extractors as $extractor) {
+            $failed = !$comparator->compare($extractor, $reference) || $failed;
+        }
+
+        return $failed;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -172,23 +194,22 @@ class CheckAuthor extends Command
         $error      = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
         $extractors = $this->createSourceExtractors($input, $error, $dir);
 
-        if (empty($extractors)) {
+        if (empty($extractors) && !$input->getOption('php-files')) {
             $error->writeln('<error>You must select at least one validation to run!</error>');
-            $error->writeln('validate-author.php [--php-files] [--composer] [--bower] [--packages]');
+            $error->writeln('check-author.php [--php-files] [--composer] [--bower] [--packages]');
 
             return 1;
         }
 
         $failed = false;
 
-        $gitExtractor = new GitAuthorExtractor($dir, $error);
-        $gitExtractor->setIgnoredAuthors($ignores);
-
         $comparator = new AuthorListComparator($error);
         $comparator->shallGeneratePatches($diff);
 
-        foreach ($extractors as $extractor) {
-            $failed = !$comparator->compare($extractor, $gitExtractor) || $failed;
+        if (!empty($extractors)) {
+            $gitExtractor = new GitAuthorExtractor($dir, $error);
+            $gitExtractor->setIgnoredAuthors($ignores);
+            $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
         }
 
         // Finally check the php files.
