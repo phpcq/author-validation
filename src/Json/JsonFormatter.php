@@ -11,6 +11,8 @@
  * This project is provided in good faith and hope to be usable by anyone.
  *
  * @package    contao-community-alliance/build-system-tool-author-validation
+ * @author     Konstantin Kudryashiv <ever.zet@gmail.com>
+ * @author     Jordi Boggiano <j.boggiano@seld.be>
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @copyright  Contao Community Alliance <https://c-c-a.org>
  * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation

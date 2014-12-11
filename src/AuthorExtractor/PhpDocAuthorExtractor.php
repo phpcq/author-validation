@@ -20,8 +20,6 @@
 
 namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
 
-use Symfony\Component\Console\Output\OutputInterface;
-
 /**
  * Extract the author information from a phpDoc file doc block.
  */
@@ -35,39 +33,19 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
     protected $filePath;
 
     /**
-     * Create a new instance.
-     *
-     * @param string          $baseDir  The base directory this extractor shall operate within.
-     *
-     * @param string          $filePath The file to work on.
-     *
-     * @param OutputInterface $output   The output interface to use for logging.
+     * {@inheritDoc}
      */
-    public function __construct($baseDir, $filePath, OutputInterface $output)
+    protected function buildFinder()
     {
-        parent::__construct($baseDir, $output);
-
-        $this->filePath = $filePath;
+        return parent::buildFinder()->name('*.php');
     }
 
     /**
-     * Retrieve the file path to use in reporting.
-     *
-     * @return string
+     * {@inheritDoc}
      */
-    public function getFilePath()
+    protected function doExtract($path)
     {
-        return $this->filePath;
-    }
-
-    /**
-     * Read the composer.json, if it exists and extract the authors.
-     *
-     * @return string[]|null
-     */
-    protected function doExtract()
-    {
-        if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer(), $matches, PREG_OFFSET_CAPTURE)) {
+        if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
             return array();
         }
 
@@ -80,23 +58,16 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
     }
 
     /**
-     * Update author list in the storage with the given authors.
-     *
-     * @param string $authors The author list that shall be used in the resulting buffer (optional, if empty the buffer
-     *                        is unchanged).
-     *
-     * @return string The new storage content with the updated author list.
+     * {@inheritDoc}
      */
-    public function getBuffer($authors = null)
+    public function getBuffer($path, $authors = null)
     {
-        $pathname = $this->getFilePath();
-
-        if (!is_file($pathname)) {
+        if (!is_file($path)) {
             return '';
         }
 
         // 4k ought to be enough of a file header for anyone (I hope).
-        $content = file_get_contents($pathname, null, null, null, 4096);
+        $content = file_get_contents($path, null, null, null, 4096);
         $closing = strpos($content, '*/');
         if ($closing === false) {
             return array();
@@ -114,7 +85,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
         $docBlock = substr($content, 0, ($closing + 2));
 
         if ($authors) {
-            return $this->setAuthors($docBlock, $authors);
+            return $this->setAuthors($docBlock, $this->calculateUpdatedAuthors($path, $authors));
         }
 
         return $docBlock;
@@ -131,7 +102,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     protected function setAuthors($docBlock, $authors)
     {
-        $newAuthors = $this->calculateUpdatedAuthors($authors);
+        $newAuthors = $authors;
         $lines      = explode("\n", $docBlock);
         $lastAuthor = 0;
         $indention  = ' * @author     ';

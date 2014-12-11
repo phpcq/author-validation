@@ -26,23 +26,19 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtrac
 class BowerAuthorExtractor extends JsonAuthorExtractor
 {
     /**
-     * Retrieve the file path to use in reporting.
-     *
-     * @return string
+     * {@inheritDoc}
      */
-    public function getFilePath()
+    protected function buildFinder()
     {
-        return $this->getBaseDir() . DIRECTORY_SEPARATOR . 'bower.json';
+        return parent::buildFinder()->name('bower.json');
     }
 
     /**
-     * Read the composer.json, if it exists and extract the authors.
-     *
-     * @return string[]|null
+     * {@inheritDoc}
      */
-    protected function doExtract()
+    protected function doExtract($path)
     {
-        $bowerJson = $this->loadFile();
+        $bowerJson = $this->loadFile($path);
 
         if ($bowerJson === null) {
             return null;
@@ -86,7 +82,7 @@ class BowerAuthorExtractor extends JsonAuthorExtractor
     protected function setAuthors($json, $authors)
     {
         $json['authors'] = array();
-        foreach ($this->calculateUpdatedAuthors($authors) as $author) {
+        foreach ($authors as $author) {
             $json['authors'][] = $author;
         }
 

@@ -26,39 +26,20 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation;
 interface AuthorExtractor
 {
     /**
-     * Retrieve the file path to use in reporting.
+     * Retrieve the file paths this extractor knows about.
      *
      * @return string
      */
-    public function getFilePath();
+    public function getFilePaths();
 
     /**
-     * Retrieve the base dir of this extractor.
+     * Retrieve the contained authors for a path.
      *
-     * @return string
-     */
-    public function getBaseDir();
-
-    /**
-     * Set the authors to be ignored.
-     *
-     * @param array $ignoredAuthors The authors to be ignored.
+     * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]
-     */
-    public function setIgnoredAuthors(array $ignoredAuthors);
-
-    /**
-     * Get the authors to be ignored.
      *
-     * @return string[]
+     * @see    AuthorExtractor::getFilePaths()
      */
-    public function getIgnoredAuthors();
-
-    /**
-     * Retrieve the contained authors.
-     *
-     * @return string
-     */
-    public function extractAuthors();
+    public function extractAuthorsFor($path);
 }

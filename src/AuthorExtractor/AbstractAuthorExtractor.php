@@ -21,7 +21,9 @@
 namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
 
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Config;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Abstract class for author extraction.
@@ -29,11 +31,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class AbstractAuthorExtractor implements AuthorExtractor
 {
     /**
-     * The base directory to operate within.
+     * The configuration this extractor shall operate within.
      *
-     * @var string
+     * @var Config
      */
-    protected $baseDir;
+    protected $config;
 
     /**
      * The output to use for logging.
@@ -59,70 +61,38 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     /**
      * Create a new instance.
      *
-     * @param string          $baseDir The base directory this extractor shall operate within.
+     * @param Config          $config The configuration this extractor shall operate with.
      *
-     * @param OutputInterface $output  The output interface to use for logging.
+     * @param OutputInterface $output The output interface to use for logging.
      */
-    public function __construct($baseDir, OutputInterface $output)
+    public function __construct(Config $config, OutputInterface $output)
     {
-        $this->baseDir = $baseDir;
-        $this->output  = $output;
+        $this->config = $config;
+        $this->output = $output;
     }
 
     /**
-     * Retrieve the base dir of this extractor.
-     *
-     * @return string
+     * {@inheritDoc}
      */
-    public function getBaseDir()
+    public function extractAuthorsFor($path)
     {
-        return $this->baseDir;
-    }
-
-    /**
-     * Set the authors to be ignored.
-     *
-     * @param array $ignoredAuthors The authors to be ignored.
-     *
-     * @return AbstractAuthorExtractor
-     */
-    public function setIgnoredAuthors(array $ignoredAuthors)
-    {
-        $this->ignoredAuthors = $this->beautifyAuthorList($ignoredAuthors);
-
-        return $this;
-    }
-
-    /**
-     * Get the authors to be ignored.
-     *
-     * @return string[]
-     */
-    public function getIgnoredAuthors()
-    {
-        return $this->ignoredAuthors ? $this->ignoredAuthors : array();
-    }
-
-    /**
-     * Retrieve the contained authors.
-     *
-     * @return string[]
-     */
-    public function extractAuthors()
-    {
-        if (!$this->cachedResult) {
-            $result = $this->beautifyAuthorList($this->doExtract());
+        if (!isset($this->cachedResult[$path])) {
+            $result = $this->beautifyAuthorList($this->doExtract($path));
             if (is_array($result)) {
-                $result = array_diff_key(
-                    $result,
-                    $this->getIgnoredAuthors()
-                );
+                $authors = array();
+                foreach ($result as $author) {
+                    $author = $this->config->getRealAuthor($author);
+                    if ($author) {
+                        $authors[strtolower($author)] = $author;
+                    }
+                }
+                $result = $authors;
             }
 
-            $this->cachedResult = $result;
+            $this->cachedResult[$path] = $result;
         }
 
-        return $this->cachedResult;
+        return $this->cachedResult[$path];
     }
 
     /**
@@ -150,9 +120,49 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function getFilePaths()
+    {
+        $finder = $this->buildFinder();
+        $files  = array();
+
+        /** @var \SplFileInfo[] $finder */
+        foreach ($finder as $file) {
+            $files[] = $file->getPathname();
+        }
+
+        return $files;
+    }
+
+    /**
      * Perform the extraction of authors.
      *
-     * @return string[] The author list.
+     * @param string $path A path obtained via a prior call to AbstractAuthorExtractor::getFilePaths().
+     *
+     * @return string[]|null The author list.
      */
-    abstract protected function doExtract();
+    abstract protected function doExtract($path);
+
+    /**
+     * Build a Symfony2 Finder instance that searches all included paths for files.
+     *
+     * The local config instance will be queried for included and excluded files and the Finder will be populated with
+     * them.
+     *
+     * @return Finder
+     */
+    protected function buildFinder()
+    {
+        $finder = new Finder();
+        $finder
+            ->in($this->config->getIncludedPaths())
+            ->notPath('/vendor/')
+            ->files();
+        foreach ($this->config->getExcludedPaths() as $excluded) {
+            $finder->notPath($excluded);
+        }
+
+        return $finder;
+    }
 }

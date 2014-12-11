@@ -22,9 +22,14 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Test\AuthorE
 
 
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Config;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-class PhpDocAuthorExtractorTest extends \PHPUnit_Framework_TestCase {
+/**
+ * Test class PhpDocAuthorExtractor.
+ */
+class PhpDocAuthorExtractorTest extends \PHPUnit_Framework_TestCase
+{
 
     /**
      * Test the setAuthors() method.
@@ -32,6 +37,7 @@ class PhpDocAuthorExtractorTest extends \PHPUnit_Framework_TestCase {
     public function testSetAuthors()
     {
         $output    = new BufferedOutput();
-        $extractor = new PhpDocAuthorExtractor('.', '.', $output);
+        $extractor = new PhpDocAuthorExtractor(new Config(), $output);
+        $this->markTestIncomplete('Unimplemented so far.');
     }
 }
