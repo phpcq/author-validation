@@ -33,13 +33,6 @@ use Symfony\Component\Process\ProcessBuilder;
 class GitAuthorExtractor extends AbstractAuthorExtractor
 {
     /**
-     * The git repository instance.
-     *
-     * @var GitRepository
-     */
-    protected $git;
-
-    /**
      * Optional attached finder for processing multiple files.
      *
      * @var Finder
@@ -47,24 +40,23 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     protected $finder;
 
     /**
-     * Create a new instance.
+     * Create a git repository instance.
      *
-     * @param string          $baseDir The base directory this extractor shall operate within.
+     * @param string $path A path within a git repository.
      *
-     * @param OutputInterface $output  The output interface to use for logging.
+     * @return GitRepository.
      */
-    public function __construct($baseDir, OutputInterface $output)
+    private function getGitRepositoryFor($path)
     {
-        parent::__construct($baseDir, $output);
-
-        $this->git = new GitRepository($this->determineGitRoot($baseDir));
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $this->git->getConfig()->setLogger(
-                new ConsoleLogger($output)
+        $git = new GitRepository($this->determineGitRoot($path));
+        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $git->getConfig()->setLogger(
+                new ConsoleLogger($this->output)
             );
         }
-    }
 
+        return $git;
+    }
 
     /**
      * Determine the git root, starting from arbitrary directory.
@@ -91,6 +83,53 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     }
 
     /**
+     * Retrieve a list of all files within a git repository.
+     *
+     * @param GitRepository $git The repository to extract all files from.
+     *
+     * @return string[]
+     *
+     * @throws GitException When the git execution failed.
+     */
+    private function getAllFilesFromGit($git)
+    {
+        $gitDir = $git->getRepositoryPath();
+        // Sadly no command in our git library for this.
+        $processBuilder = new ProcessBuilder();
+        $processBuilder->setWorkingDirectory($gitDir);
+        $processBuilder
+            ->add($git->getConfig()->getGitExecutablePath())
+            ->add('ls-tree')
+            ->add('HEAD')
+            ->add('-r')
+            ->add('--full-name')
+            ->add('--name-only');
+
+        $process = $processBuilder->getProcess();
+
+        $git->getConfig()->getLogger()->debug(
+            sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+        );
+
+        $process->run();
+        $output = rtrim($process->getOutput(), "\r\n");
+
+        if (!$process->isSuccessful()) {
+            throw GitException::createFromProcess('Could not execute git command', $process);
+        }
+
+        $files = array();
+        foreach (explode(PHP_EOL, $output) as $file) {
+            $absolutePath = $gitDir . '/' . $file;
+            if (!$this->config->isPathExcluded($absolutePath)) {
+                $files[trim($absolutePath)] = trim($absolutePath);
+            }
+        }
+
+        return $files;
+    }
+
+    /**
      * Convert the git binary output to a valid author list.
      *
      * @param string[] $authors The author list to convert.
@@ -110,26 +149,33 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
      *
      * @return string
      */
-    public function getFilePath()
+    public function getFilePaths()
     {
-        return $this->getBaseDir();
+        $files = array();
+        foreach ($this->config->getIncludedPaths() as $path) {
+            $files = array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
+        }
+
+        return $files;
     }
 
     /**
      * Check if the current file path is a file and if so, if it has staged modifications.
      *
+     * @param string        $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
+     *
+     * @param GitRepository $git  The repository to extract all files from.
+     *
      * @return bool
      */
-    private function isDirtyFile()
+    private function isDirtyFile($path, $git)
     {
-        $path = $this->getFilePath();
-
         if (!is_file($path)) {
             return false;
         }
 
-        $status  = $this->git->status()->short()->getIndexStatus();
-        $relPath = substr($path, (strlen($this->git->getRepositoryPath()) + 1));
+        $status  = $git->status()->short()->getIndexStatus();
+        $relPath = substr($path, (strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -141,36 +187,40 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     /**
      * Retrieve the author list from the given path via calling git.
      *
-     * @param string $path The path to check.
+     * @param string        $path The path to check.
+     *
+     * @param GitRepository $git  The repository to extract all files from.
      *
      * @return string[]
      */
-    private function getAuthorListFrom($path)
+    private function getAuthorListFrom($path, $git)
     {
-        return $this->git->log()->format('%aN <%ae>')->follow()->execute($path);
+        return $git->log()->format('%aN <%ae>')->follow()->execute($path);
     }
 
     /**
      * Retrieve the data of the current user on the system.
      *
+     * @param GitRepository $git The repository to extract all files from.
+     *
      * @return string
      *
      * @throws GitException When the git execution failed.
      */
-    private function getCurrentUserInfo()
+    private function getCurrentUserInfo($git)
     {
         // Sadly no command in our git library for this.
         $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($this->git->getRepositoryPath());
+        $processBuilder->setWorkingDirectory($git->getRepositoryPath());
         $processBuilder
-            ->add($this->git->getConfig()->getGitExecutablePath())
+            ->add($git->getConfig()->getGitExecutablePath())
             ->add('config')
             ->add('--get-regexp')
             ->add('user.[name|email]');
 
         $process = $processBuilder->getProcess();
 
-        $this->git->getConfig()->getLogger()->debug(
+        $git->getConfig()->getLogger()->debug(
             sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
@@ -195,18 +245,22 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     }
 
     /**
-     * Read the composer.json, if it exists and extract the authors.
+     * Perform the extraction of authors.
+     *
+     * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]|null
      */
-    protected function doExtract()
+    protected function doExtract($path)
     {
-        $authors = $this->convertAuthorList($this->getAuthorListFrom($this->getFilePath()));
+        $git = $this->getGitRepositoryFor($path);
+
+        $authors = $this->convertAuthorList($this->getAuthorListFrom($path, $git));
 
         // Check if the file path is a file, if so, we need to check if it is "dirty" and someone is currently working
         // on it.
-        if ($this->isDirtyFile()) {
-            $authors[] = $this->getCurrentUserInfo();
+        if ($this->isDirtyFile($path, $git)) {
+            $authors[] = $this->getCurrentUserInfo($git);
         }
 
         return $authors;

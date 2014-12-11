@@ -29,19 +29,19 @@ use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Json\JsonFormatter
 abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
 {
     /**
-     * Read the composer.json file and return it as array.
+     * Read the .json file and return it as array.
+     *
+     * @param string $path A path obtained via a prior call to JsonAuthorExtractor::getFilePaths().
      *
      * @return array
      */
-    protected function loadFile()
+    protected function loadFile($path)
     {
-        $pathname = $this->getFilePath();
-
-        if (!is_file($pathname)) {
+        if (!is_file($path)) {
             return null;
         }
 
-        $composerJson = file_get_contents($pathname);
+        $composerJson = file_get_contents($path);
         return (array) json_decode($composerJson, true);
     }
 
@@ -69,19 +69,14 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
     abstract protected function setAuthors($json, $authors);
 
     /**
-     * Update author list in the storage with the given authors.
-     *
-     * @param string $authors The author list that shall be used in the resulting buffer (optional, if empty the buffer
-     *                        is unchanged).
-     *
-     * @return string The new storage content with the updated author list.
+     * {@inheritDoc}
      */
-    public function getBuffer($authors = null)
+    public function getBuffer($path, $authors = null)
     {
-        $json = $this->loadFile();
+        $json = $this->loadFile($path);
 
         if ($authors) {
-            $json = $this->setAuthors($json, $authors);
+            $json = $this->setAuthors($json, $this->calculateUpdatedAuthors($path, $authors));
         }
 
         return $this->encodeData($json);

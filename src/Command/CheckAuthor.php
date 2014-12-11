@@ -23,15 +23,14 @@ namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Command;
 
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
-use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorListComparator;
+use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Finder\Finder;
 
 /**
  * Class to check the mentioned authors.
@@ -52,79 +51,58 @@ class CheckAuthor extends Command
                 'php-files',
                 null,
                 InputOption::VALUE_NONE,
-                'Validate @author annotations in PHP files'
+                'Validate @author annotations in PHP files.'
             )
             ->addOption(
                 'composer',
                 null,
                 InputOption::VALUE_NONE,
-                'Validate authors in composer.json'
+                'Validate authors in composer.json.'
             )
             ->addOption(
                 'bower',
                 null,
                 InputOption::VALUE_NONE,
-                'Validate authors in bower.json'
+                'Validate authors in bower.json.'
             )
             ->addOption(
                 'packages',
                 null,
                 InputOption::VALUE_NONE,
-                'Validate authors in packages.json'
+                'Validate authors in packages.json.'
+            )
+            ->addOption(
+                '--config',
+                '-f',
+                InputOption::VALUE_NONE,
+                'Validate authors in packages.json.'
             )
             ->addOption(
                 'ignore',
                 null,
                 (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
-                'authors to ignore (format: "John Doe <j.doe@acme.org>"',
+                'Author to ignore (format: "John Doe <j.doe@acme.org>".',
+                array()
+            )
+            ->addOption(
+                'exclude',
+                null,
+                (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
+                'Path to exclude.',
                 array()
             )
             ->addOption(
                 'diff',
                 null,
                 InputOption::VALUE_NONE,
-                'create output in diff format instead of mentioning what\'s missing/superfluous.'
+                'Create output in diff format instead of mentioning what\'s missing/superfluous.'
             )
             ->addArgument(
-                'dir',
-                InputArgument::OPTIONAL,
-                'The directory to start searching, must be a git repository or a subdir in a git repository.',
-                '.'
+                'include',
+                (InputArgument::IS_ARRAY | InputArgument::OPTIONAL),
+                'The directory to start searching, must be a git repository or a sub dir in a git repository.',
+                array('.')
             );
-    }
-
-    /**
-     * Find PHP files, read the authors and validate against the git log of each file.
-     *
-     * @param string               $dir        The directory to search files in.
-     *
-     * @param string[]             $ignores    The authors to be ignored from the git repository.
-     *
-     * @param OutputInterface      $output     The output.
-     *
-     * @param AuthorListComparator $comparator The comparator performing the comparisons.
-     *
-     * @return bool
-     */
-    private function validatePhpAuthors($dir, $ignores, OutputInterface $output, AuthorListComparator $comparator)
-    {
-        $finder = new Finder();
-
-        $finder->in($dir)->notPath('/vendor/')->files()->name('*.php');
-
-        $invalidates = false;
-
-        /** @var \SplFileInfo[] $finder */
-        foreach ($finder as $file) {
-            /** @var \SplFileInfo $file */
-            $phpExtractor = new PhpDocAuthorExtractor($dir, $file->getPathname(), $output);
-            $gitExtractor = new GitAuthorExtractor($file->getPathname(), $output);
-            $gitExtractor->setIgnoredAuthors($ignores);
-
-            $invalidates = !$comparator->compare($phpExtractor, $gitExtractor) || $invalidates;
-        }
-
-        return !$invalidates;
     }
 
     /**
@@ -134,11 +112,11 @@ class CheckAuthor extends Command
      *
      * @param OutputInterface $output The output interface to use for logging.
      *
-     * @param string          $dir    The base directory.
+     * @param Config          $config The configuration.
      *
      * @return AuthorExtractor[]
      */
-    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $dir)
+    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $config)
     {
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = array();
@@ -149,9 +127,11 @@ class CheckAuthor extends Command
                 'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
             'packages' =>
                 'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
-                 ) as $option => $class) {
+            'php-files' =>
+                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
+        ) as $option => $class) {
             if ($input->getOption($option)) {
-                $extractors[$option] = new $class($dir, $output);
+                $extractors[$option] = new $class($config, $output);
             }
         }
 
@@ -188,34 +168,45 @@ class CheckAuthor extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $diff       = $input->getOption('diff');
-        $ignores    = $input->getOption('ignore');
-        $dir        = realpath($input->getArgument('dir'));
-        $error      = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
-        $extractors = $this->createSourceExtractors($input, $error, $dir);
+        $error = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
-        if (empty($extractors) && !$input->getOption('php-files')) {
+        if (!($input->getOption('php-files')
+            || $input->getOption('composer')
+            || $input->getOption('bower')
+            || $input->getOption('packages'))
+        ) {
             $error->writeln('<error>You must select at least one validation to run!</error>');
             $error->writeln('check-author.php [--php-files] [--composer] [--bower] [--packages]');
 
             return 1;
         }
 
-        $failed = false;
-
-        $comparator = new AuthorListComparator($error);
-        $comparator->shallGeneratePatches($diff);
-
-        if (!empty($extractors)) {
-            $gitExtractor = new GitAuthorExtractor($dir, $error);
-            $gitExtractor->setIgnoredAuthors($ignores);
-            $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
+        $configFile    = $input->getOption('config');
+        $defaultConfig = getcwd() . '/.check-author.yml';
+        if (!$configFile && is_file($defaultConfig)) {
+            $configFile = $defaultConfig;
         }
 
-        // Finally check the php files.
+        $config = new Config($configFile);
+        $config
+            ->ignoreAuthors($input->getOption('ignore'))
+            ->excludePaths($input->getOption('exclude'))
+            ->includePaths(
+                array_filter(array_map(
+                    function ($arg) {
+                        return realpath($arg);
+                    },
+                    $input->getArgument('include')
+                ))
+            );
 
-        $failed = ($input->getOption('php-files') && !$this->validatePhpAuthors($dir, $ignores, $error, $comparator))
-                  || $failed;
+        $diff         = $input->getOption('diff');
+        $extractors   = $this->createSourceExtractors($input, $error, $config);
+        $gitExtractor = new GitAuthorExtractor($config, $error);
+        $comparator   = new AuthorListComparator($config, $error);
+        $comparator->shallGeneratePatches($diff);
+
+        $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
 
         if ($failed && $diff) {
             $output->writeln($comparator->getPatchSet());

@@ -28,10 +28,12 @@ interface PatchingExtractor extends AuthorExtractor
     /**
      * Update author list in the storage with the given authors.
      *
+     * @param string $path    A path obtained via a prior call to AuthorExtractor::getFilePaths().
+     *
      * @param string $authors The author list that shall be used in the resulting buffer (optional, if empty the buffer
      *                        is unchanged).
      *
      * @return string The new storage content with the updated author list.
      */
-    public function getBuffer($authors = null);
+    public function getBuffer($path, $authors = null);
 }

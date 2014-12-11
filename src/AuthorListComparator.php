@@ -28,6 +28,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AuthorListComparator
 {
     /**
+     * The configuration this extractor shall operate within.
+     *
+     * @var Config
+     */
+    protected $config;
+
+    /**
      * The output to use for logging.
      *
      * @var OutputInterface
@@ -51,10 +58,13 @@ class AuthorListComparator
     /**
      * Create a new instance.
      *
+     * @param Config          $config The configuration this extractor shall operate with.
+     *
      * @param OutputInterface $output The output interface to use for logging.
      */
-    public function __construct(OutputInterface $output)
+    public function __construct(Config $config, OutputInterface $output)
     {
+        $this->config = $config;
         $this->output = $output;
     }
 
@@ -87,20 +97,22 @@ class AuthorListComparator
     /**
      * Handle the patching cycle for a extractor.
      *
+     * @param string          $path          The path to patch.
+     *
      * @param AuthorExtractor $extractor     The extractor to patch.
      *
      * @param array           $wantedAuthors The authors that shall be contained in the result.
      *
      * @return bool True if the patch has been collected, false otherwise.
      */
-    private function patchExtractor($extractor, $wantedAuthors)
+    private function patchExtractor($path, $extractor, $wantedAuthors)
     {
         if (!($this->diff && $extractor instanceof PatchingExtractor)) {
             return false;
         }
 
-        $original = explode("\n", $extractor->getBuffer());
-        $new      = explode("\n", $extractor->getBuffer($wantedAuthors));
+        $original = explode("\n", $extractor->getBuffer($path));
+        $new      = explode("\n", $extractor->getBuffer($path, $wantedAuthors));
         $diff     = new \Diff($original, $new);
         $patch    = $diff->render($this->diff);
 
@@ -108,9 +120,18 @@ class AuthorListComparator
             return false;
         }
 
-        $patchFile = substr($extractor->getFilePath(), strlen($extractor->getBaseDir()));
-        if ($patchFile[0] == '/') {
-            $patchFile = substr($patchFile, 1);
+        $patchFile = $path;
+
+        foreach ($this->config->getIncludedPaths() as $prefix) {
+            $prefixLength = strlen($prefix);
+            if (substr($path, 0, $prefixLength) === $prefix) {
+                $patchFile = substr($path, $prefixLength);
+
+                if ($patchFile[0] == '/') {
+                    $patchFile = substr($patchFile, 1);
+                }
+                break;
+            }
         }
 
         /**
@@ -126,9 +147,96 @@ class AuthorListComparator
         $this->patchSet[] =
             'diff ' . $patchFile . ' ' .$patchFile . "\n" .
             '--- ' . $patchFile . "\n" .
-            '+++ ' . $patchFile . "\n"  . $patch;
+            '+++ ' . $patchFile . "\n"  .
+            $patch;
 
         return true;
+    }
+
+    /**
+     * Determine the superfluous authors from the passed arrays.
+     *
+     * @param array  $mentionedAuthors The author list containing the current state.
+     *
+     * @param array  $wantedAuthors    The author list containing the desired state.
+     *
+     * @param string $path             The path to relate to.
+     *
+     * @return array
+     */
+    private function determineSuperfluous($mentionedAuthors, $wantedAuthors, $path)
+    {
+        $superfluous = array();
+        foreach (array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
+            if (!$this->config->isCopyLeftAuthor($author, $path)) {
+                $superfluous[$key] = $author;
+            }
+        }
+
+        return $superfluous;
+    }
+    /**
+     * Run comparison for a given path.
+     *
+     * @param AuthorExtractor $current The author list containing the current state.
+     *
+     * @param AuthorExtractor $should  The author list containing the desired state.
+     *
+     * @param string          $path    The path to compare.
+     *
+     * @return bool
+     */
+    private function comparePath(AuthorExtractor $current, AuthorExtractor $should, $path)
+    {
+        $validates        = true;
+        $mentionedAuthors = $current->extractAuthorsFor($path);
+        $wantedAuthors    = $should->extractAuthorsFor($path);
+
+        // If current input is not valid, return.
+        if ($mentionedAuthors === null) {
+            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $this->output->writeln(
+                    sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
+                );
+            }
+
+            return true;
+        }
+
+        $superfluousMentions = $this->determineSuperfluous($mentionedAuthors, $wantedAuthors, $path);
+        $missingMentions     = array_diff_key($wantedAuthors, $mentionedAuthors);
+
+        if (count($superfluousMentions)) {
+            $this->output->writeln(
+                sprintf(
+                    'The file <info>%s</info> is mentioning superfluous author(s):' .
+                    PHP_EOL .
+                    '<comment>%s</comment>',
+                    $path,
+                    implode(PHP_EOL, $superfluousMentions)
+                )
+            );
+            $validates = false;
+        }
+
+        if (count($missingMentions)) {
+            $this->output->writeln(
+                sprintf(
+                    'The file <info>%s</info> is not mentioning its author(s):' .
+                    PHP_EOL .
+                    '<comment>%s</comment>',
+                    $path,
+                    implode(PHP_EOL, $missingMentions)
+                )
+            );
+            $validates = false;
+        }
+
+        if (!$validates) {
+            $this->patchExtractor($path, $current, $wantedAuthors);
+        }
+
+        return $validates;
     }
 
     /**
@@ -144,53 +252,13 @@ class AuthorListComparator
      */
     public function compare(AuthorExtractor $current, AuthorExtractor $should)
     {
-        $validates        = true;
-        $mentionedAuthors = $current->extractAuthors();
-        $wantedAuthors    = $should->extractAuthors();
+        $shouldPaths  = $should->getFilePaths();
+        $currentPaths = $current->getFilePaths();
+        $allPaths     = array_intersect($shouldPaths, $currentPaths);
+        $validates    = true;
 
-        // If current input is not valid, return.
-        if ($mentionedAuthors === null) {
-            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                $this->output->writeln(
-                    sprintf('Skipped check of <info>%s</info> as it is not present.', $current->getFilePath())
-                );
-            }
-
-            return true;
-        }
-
-        $wasteMentions   = array_diff_key($mentionedAuthors, $wantedAuthors);
-        $missingMentions = array_diff_key($wantedAuthors, $mentionedAuthors);
-        $pathname        = $current->getFilePath();
-
-        if (count($wasteMentions)) {
-            $this->output->writeln(
-                sprintf(
-                    'The file <info>%s</info> is mentioning superfluous author(s):' .
-                    PHP_EOL .
-                    '<comment>%s</comment>',
-                    $pathname,
-                    implode(PHP_EOL, $wasteMentions)
-                )
-            );
-            $validates = false;
-        }
-
-        if (count($missingMentions)) {
-            $this->output->writeln(
-                sprintf(
-                    'The file <info>%s</info> is not mentioning its author(s):' .
-                    PHP_EOL .
-                    '<comment>%s</comment>',
-                    $pathname,
-                    implode(PHP_EOL, $missingMentions)
-                )
-            );
-            $validates = false;
-        }
-
-        if (!$validates) {
-            $this->patchExtractor($current, $wantedAuthors);
+        foreach ($allPaths as $pathname) {
+            $validates = $this->comparePath($current, $should, $pathname) || $validates;
         }
 
         return $validates;
