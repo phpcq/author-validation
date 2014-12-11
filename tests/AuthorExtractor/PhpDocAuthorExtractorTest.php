@@ -30,7 +30,6 @@ use Symfony\Component\Console\Output\BufferedOutput;
  */
 class PhpDocAuthorExtractorTest extends \PHPUnit_Framework_TestCase
 {
-
     /**
      * Test the setAuthors() method.
      */
