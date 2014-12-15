@@ -209,8 +209,6 @@ class Config
                 foreach ($aliases as $alias) {
                     $this->aliasAuthor($alias, $author);
                 }
-
-                return $this;
             } else {
                 $this->aliasAuthor($aliases, $author);
             }
