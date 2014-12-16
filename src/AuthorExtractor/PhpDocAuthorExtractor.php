@@ -70,7 +70,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
         $content = file_get_contents($path, null, null, null, 4096);
         $closing = strpos($content, '*/');
         if ($closing === false) {
-            return array();
+            return '';
         }
 
         $tokens    = token_get_all(substr($content, 0, ($closing + 2)));
