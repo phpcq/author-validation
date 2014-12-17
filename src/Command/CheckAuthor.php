@@ -13,6 +13,7 @@
  * @package    contao-community-alliance/build-system-tool-author-validation
  * @author     Tristan Lins <tristan.lins@bit3.de>
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
+ * @author     David Molineus <david.molineus@netzmacht.de>
  * @copyright  Contao Community Alliance <https://c-c-a.org>
  * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
  * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
@@ -75,7 +76,7 @@ class CheckAuthor extends Command
                 '--config',
                 '-f',
                 InputOption::VALUE_NONE,
-                'Validate authors in packages.json.'
+                'Optional config file path.'
             )
             ->addOption(
                 'ignore',
@@ -96,6 +97,13 @@ class CheckAuthor extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Create output in diff format instead of mentioning what\'s missing/superfluous.'
+            )
+            ->addOption(
+                'scope',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Determine if file should contain authors of the file or the project',
+                'file'
             )
             ->addArgument(
                 'include',
@@ -202,7 +210,7 @@ class CheckAuthor extends Command
 
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config);
-        $gitExtractor = new GitAuthorExtractor($config, $error);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error);
         $comparator   = new AuthorListComparator($config, $error);
         $comparator->shallGeneratePatches($diff);
 
@@ -213,5 +221,23 @@ class CheckAuthor extends Command
         }
 
         return $failed ? 1 : 0;
+    }
+
+    /**
+     * Create git author extractor for demanded scope.
+     *
+     * @param string          $scope  Git author scope.
+     * @param Config          $config Author extractor config.
+     * @param OutputInterface $error  Error output.
+     *
+     * @return GitAuthorExtractor|AuthorExtractor\GitProjectAuthorExtractor
+     */
+    private function createGitAuthorExtractor($scope, Config $config, $error)
+    {
+        if ($scope === 'project') {
+            return new AuthorExtractor\GitProjectAuthorExtractor($config, $error);
+        } else {
+            return new GitAuthorExtractor($config, $error);
+        }
     }
 }

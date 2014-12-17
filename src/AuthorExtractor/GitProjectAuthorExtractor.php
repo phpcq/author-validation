@@ -25,9 +25,9 @@ use ContaoCommunityAlliance\BuildSystem\Repository\GitRepository;
 use Symfony\Component\Finder\Finder;
 
 /**
- * Extract the author information from a git repository.
+ * Extract the author information from a git repository. It does not care about which file where changed.
  */
-class GitAuthorExtractor extends AbstractGitAuthorExtractor
+class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
 {
     /**
      * Optional attached finder for processing multiple files.
@@ -48,46 +48,44 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
         if (!$authors) {
             return array();
         }
-        return preg_split('~[\r\n]+~', $authors);
+
+        // remove commit sumary of author list
+        return array_map(
+            function ($author) {
+                return preg_replace('~\s*([0-9]+)\s+(.*)~', '$2', $author);
+            },
+            preg_split('~[\r\n]+~', $authors)
+        );
     }
 
     /**
-     * Check if the current file path is a file and if so, if it has staged modifications.
-     *
-     * @param string        $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
+     * Check if git repository has uncommitted modifications.
      *
      * @param GitRepository $git  The repository to extract all files from.
      *
      * @return bool
      */
-    private function isDirtyFile($path, $git)
+    private function hasUncommittedChanges($git)
     {
-        if (!is_file($path)) {
+        $status = $git->status()->short()->getIndexStatus();
+
+        if (empty($status)) {
             return false;
         }
 
-        $status  = $git->status()->short()->getIndexStatus();
-        $relPath = substr($path, (strlen($git->getRepositoryPath()) + 1));
-
-        if (isset($status[$relPath]) && $status[$relPath]) {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**
-     * Retrieve the author list from the given path via calling git.
+     * Retrieve the author list from the git repository via calling git.
      *
-     * @param string        $path The path to check.
-     *
-     * @param GitRepository $git  The repository to extract all files from.
+     * @param GitRepository $git The repository to extract all files from.
      *
      * @return string[]
      */
-    private function getAuthorListFrom($path, $git)
+    private function getAuthorListFrom($git)
     {
-        return $git->log()->format('%aN <%ae>')->follow()->execute($path);
+        return $git->shortlog()->summary()->email()->revisionRange('HEAD')->execute();
     }
 
     /**
@@ -101,11 +99,10 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
     {
         $git = $this->getGitRepositoryFor($path);
 
-        $authors = $this->convertAuthorList($this->getAuthorListFrom($path, $git));
+        $authors = $this->convertAuthorList($this->getAuthorListFrom($git));
 
-        // Check if the file path is a file, if so, we need to check if it is "dirty" and someone is currently working
-        // on it.
-        if ($this->isDirtyFile($path, $git)) {
+        // Check if repository has uncomitted changes, so that someone is currently working on it.
+        if ($this->hasUncommittedChanges($git)) {
             $authors[] = $this->getCurrentUserInfo($git);
         }
 
