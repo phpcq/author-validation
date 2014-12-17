@@ -27,7 +27,7 @@ use Symfony\Component\Finder\Finder;
 /**
  * Extract the author information from a git repository.
  */
-class GitAuthorExtractor extends AbstractGitExtractor
+class GitAuthorExtractor extends AbstractGitAuthorExtractor
 {
     /**
      * Optional attached finder for processing multiple files.
