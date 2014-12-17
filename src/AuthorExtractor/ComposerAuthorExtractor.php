@@ -49,14 +49,25 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
             return array();
         }
 
+        $config           = $this->config;
         $mentionedAuthors = array_map(
-            function ($author) {
+            function ($author) use ($config) {
                 if (isset($author['email'])) {
-                    return sprintf(
+                    $author['name'] = sprintf(
                         '%s <%s>',
                         $author['name'],
                         $author['email']
                     );
+                }
+
+                // set role metadata if not already set.
+                if (isset($author['role']) && !$config->hasMetadata($author['name'], 'role')) {
+                    $config->setMetadata($author['name'], 'role', $author['role']);
+                }
+
+                // set homepage metadata if not already set.
+                if (isset($author['homepage']) && !$config->hasMetadata($author['name'], 'homepage')) {
+                    $config->setMetadata($author['name'], 'homepage', $author['homepage']);
                 }
 
                 return $author['name'];
@@ -82,11 +93,17 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
         foreach ($authors as $author) {
             list($name, $email) = explode(' <', $author);
 
-            $json['authors'][] = array(
+            $config = array(
                 'name'     => trim($name),
                 'email'    => trim(substr($email, 0, -1)),
-                'role'     => 'Developer'
+                'role'     => $this->config->getMetadata($author, 'role') ?: 'Developer'
             );
+
+            if ($this->config->hasMetadata($author, 'homepage')) {
+                $config['homepage'] = $this->config->getMetadata($author, 'homepage');
+            }
+
+            $json['authors'][] = $config;
         }
 
         return $json;
