@@ -69,6 +69,16 @@ class Config
     protected $exclude = array();
 
     /**
+     * Author metadata.
+     *
+     * Format
+     *   Author: [ 'name' => 'value', .. ]
+     *
+     * @var array
+     */
+    protected $metadata = array();
+
+    /**
      * Create a new instance.
      *
      * @param string|bool $configFileName The config file to use.
@@ -169,6 +179,10 @@ class Config
 
         if (isset($config['exclude'])) {
             $this->excludePaths($config['exclude']);
+        }
+
+        if (isset($config['metadata'])) {
+            $this->addAuthorsMetadata($config['metadata']);
         }
 
         return $this;
@@ -456,5 +470,76 @@ class Config
     public function getExcludedPaths()
     {
         return array_values($this->exclude);
+    }
+
+    /**
+     * Add authors metadata.
+     *
+     * Format:
+     *   Author: [ name => value, ..]
+     *
+     * @param array $metadata Authors metadata.
+     *
+     * @return Config
+     */
+    public function addAuthorsMetadata($metadata)
+    {
+        foreach ($metadata as $author => $data) {
+            foreach ($data as $name => $value) {
+                $this->setMetadata($author, $name, $value);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if a specific author metadata is defined.
+     *
+     * @param string $author The author.
+     * @param string $name   Metadata name.
+     *
+     * @return bool
+     */
+    public function hasMetadata($author, $name)
+    {
+        return isset($this->metadata[$this->arrayKey($author)][$name]);
+    }
+
+    /**
+     * Get a specific meta data for an author.
+     *
+     * It returns null if it is not set.
+     *
+     * @param string $author The author.
+     * @param string $name   Metadata name.
+     *
+     * @return mixed
+     */
+    public function getMetadata($author, $name)
+    {
+        $author = $this->arrayKey($author);
+
+        if (isset($this->metadata[$author][$name])) {
+            return $this->metadata[$author][$name];
+        }
+
+        return null;
+    }
+
+    /**
+     * set a specific meta data for an author.
+     *
+     * @param string $author The author.
+     * @param string $name   Metadata name.
+     * @param mixed  $value  Metadata value.
+     *
+     * @return Config
+     */
+    public function setMetadata($author, $name, $value)
+    {
+        $this->metadata[$this->arrayKey($author)][$name] = $value;
+
+        return $this;
     }
 }
