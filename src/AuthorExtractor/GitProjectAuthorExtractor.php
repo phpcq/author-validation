@@ -67,7 +67,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
      */
     private function hasUncommittedChanges($git)
     {
-        $status  = $git->status()->short()->getIndexStatus();
+        $status = $git->status()->short()->getIndexStatus();
 
         if (empty($status)) {
             return false;
