@@ -95,13 +95,14 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
 
             $config = array(
                 'name'     => trim($name),
-                'email'    => trim(substr($email, 0, -1)),
-                'role'     => $this->config->getMetadata($author, 'role') ?: 'Developer'
+                'email'    => trim(substr($email, 0, -1))
             );
 
             if ($this->config->hasMetadata($author, 'homepage')) {
                 $config['homepage'] = $this->config->getMetadata($author, 'homepage');
             }
+
+            $config['role'] = $this->config->getMetadata($author, 'role') ?: 'Developer';
 
             $json['authors'][] = $config;
         }
