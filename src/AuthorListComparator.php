@@ -258,7 +258,7 @@ class AuthorListComparator
         $validates    = true;
 
         foreach ($allPaths as $pathname) {
-            $validates = $this->comparePath($current, $should, $pathname) || $validates;
+            $validates = $this->comparePath($current, $should, $pathname) && $validates;
         }
 
         return $validates;
