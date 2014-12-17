@@ -59,7 +59,7 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
      *
      * @throws GitException When the git execution failed.
      */
-    protected function getAllFilesFromGit($git)
+    private function getAllFilesFromGit($git)
     {
         $gitDir = $git->getRepositoryPath();
         // Sadly no command in our git library for this.
