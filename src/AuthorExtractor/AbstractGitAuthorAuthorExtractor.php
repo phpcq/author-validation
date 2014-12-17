@@ -29,7 +29,7 @@ use Symfony\Component\Process\ProcessBuilder;
 /**
  * Base class for author extraction from a git repository.
  */
-abstract class AbstractGitExtractor extends AbstractAuthorExtractor
+abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
 {
     /**
      * Create a git repository instance.
