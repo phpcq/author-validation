@@ -84,7 +84,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
      */
     private function getAuthorListFrom($git)
     {
-        return $git->shortlog()->summary()->email()->execute();
+        return $git->shortlog()->summary()->email()->revisionRange('HEAD')->execute();
     }
 
     /**
