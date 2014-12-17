@@ -13,6 +13,7 @@
  * @package    contao-community-alliance/build-system-tool-author-validation
  * @author     Tristan Lins <tristan.lins@bit3.de>
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
+ * @author     David Molineus <david.molineus@netzmacht.de>
  * @copyright  Contao Community Alliance <https://c-c-a.org>
  * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
  * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
