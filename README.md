@@ -70,4 +70,12 @@ copy-left:
   # or
   "John Doe <jd@example.org>":
     - "File.php"
+    
+# Add additional author metadata. It is used by some comparator handlers when outputting diff format.
+# Author metadata of the config file is prioritized over extracted metadata from the files.
+
+metadata:
+  "John Doe <jd@example.org>":
+    role:     "Translator"
+    homepage: "http:/www.example.org"
 ```
