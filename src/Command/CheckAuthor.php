@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This file is part of contao-community-alliance/build-system-tool-author-validation.
+ * This file is part of phpcq/author-validation.
  *
  * (c) Contao Community Alliance <https://c-c-a.org>
  *
@@ -10,16 +10,16 @@
  *
  * This project is provided in good faith and hope to be usable by anyone.
  *
- * @package    contao-community-alliance/build-system-tool-author-validation
- * @author     Tristan Lins <tristan.lins@bit3.de>
+ * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
- * @copyright  Contao Community Alliance <https://c-c-a.org>
- * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
- * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
+ * @author     Tristan Lins <tristan.lins@bit3.de>
+ * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan.lins@bit3.de>
+ * @link       https://github.com/phpcq/author-validation
+ * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @filesource
  */
 
-namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Command;
+namespace PhpCodeQuality\AuthorValidation\Command;
 
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
 use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
@@ -45,7 +45,7 @@ class CheckAuthor extends Command
     protected function configure()
     {
         $this
-            ->setName('ccabs:tools:check-author')
+            ->setName('phpcq:check-author')
             ->setDescription('Check that all authors are mentioned in each file.')
             ->addOption(
                 'php-files',
