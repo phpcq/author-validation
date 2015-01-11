@@ -11,14 +11,15 @@
         },
         {
             "name":"Tristan Lins",
-            "email":"tristan.lins@bit3.de",
-            "homepage":"http://bit3.de",
+            "email":"tristan@lins.io",
+            "homepage":"https://tristan.lins.io",
             "role":"Developer"
         }
     ],
     "support":{
         "issues":"https://github.com/phpcq/author-validation/issues",
-        "source":"https://github.com/phpcq/author-validation"
+        "source":"https://github.com/phpcq/author-validation",
+        "irc": "irc://irc.freenode.org/phpcq"
     },
     "autoload": {
         "psr-4": {

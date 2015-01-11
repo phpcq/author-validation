@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) Contao Community Alliance <https://c-c-a.org>
+ * (c) 2014 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,8 +12,8 @@
  *
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
- * @author     Tristan Lins <tristan.lins@bit3.de>
- * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan.lins@bit3.de>
+ * @author     Tristan Lins <tristan@lins.io>
+ * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @link       https://github.com/phpcq/author-validation
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @filesource
@@ -21,7 +21,7 @@
 
 namespace PhpCodeQuality\AuthorValidation\Test;
 
-use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Config;
+use PhpCodeQuality\AuthorValidation\Config;
 
 /**
  * Test the config class.

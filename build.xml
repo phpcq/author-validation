@@ -6,7 +6,7 @@
    https://github.com/phpcq/phpcq
 
 -->
-<project name="build system check author" default="build">
+<project name="phpcq/author-validation" default="build">
     <import file="vendor/phpcq/phpcq/phpcq.main.xml" />
 
     <!-- we have to override the command as otherwise phpcq won't find it. We are the root repository. -->
