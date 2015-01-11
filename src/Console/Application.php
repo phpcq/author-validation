@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * This file is part of phpcq/author-validation.
+ *
+ * (c) 2014 Christian Schiffler, Tristan Lins
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+ * This project is provided in good faith and hope to be usable by anyone.
+ *
+ * @package    phpcq/author-validation
+ * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
+ * @author     Tristan Lins <tristan@lins.io>
+ * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @link       https://github.com/phpcq/author-validation
+ * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
+ * @filesource
+ */
+
+namespace PhpCodeQuality\AuthorValidation\Command;
+
+use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+/**
+ * Class to check the mentioned authors.
+ *
+ * @package PhpCodeQuality\AuthorValidation\Command
+ */
+class Application extends BaseApplication
+{
+    /**
+     * Gets the name of the command based on input.
+     *
+     * @param InputInterface $input The input interface.
+     *
+     * @return string The command name
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    protected function getCommandName(InputInterface $input)
+    {
+        return 'phpcq:check-author';
+    }
+
+    /**
+     * Gets the default commands that should always be available.
+     *
+     * @return array An array of default Command instances
+     */
+    protected function getDefaultCommands()
+    {
+        // Keep the core default commands to have the HelpCommand
+        // which is used when using the --help option
+        $defaultCommands = parent::getDefaultCommands();
+
+        $defaultCommands[] = new CheckAuthor();
+
+        return $defaultCommands;
+    }
+
+    /**
+     * Overridden so that the application doesn't expect the command name to be the first argument.
+     *
+     * @return InputDefinition The InputDefinition instance
+     */
+    public function getDefinition()
+    {
+        $inputDefinition = parent::getDefinition();
+        // clear out the normal first argument, which is the command name
+        $inputDefinition->setArguments();
+
+        return $inputDefinition;
+    }
+}

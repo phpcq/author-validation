@@ -1,30 +1,30 @@
 <?php
 
 /**
- * This file is part of contao-community-alliance/build-system-tool-author-validation.
+ * This file is part of phpcq/author-validation.
  *
- * (c) Contao Community Alliance <https://c-c-a.org>
+ * (c) 2014 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  *
  * This project is provided in good faith and hope to be usable by anyone.
  *
- * @package    contao-community-alliance/build-system-tool-author-validation
- * @author     Tristan Lins <tristan.lins@bit3.de>
+ * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
- * @copyright  Contao Community Alliance <https://c-c-a.org>
- * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
- * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
+ * @author     Tristan Lins <tristan@lins.io>
+ * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @link       https://github.com/phpcq/author-validation
+ * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @filesource
  */
 
-namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Command;
+namespace PhpCodeQuality\AuthorValidation\Command;
 
-use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
-use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
-use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorListComparator;
-use ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Config;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorListComparator;
+use PhpCodeQuality\AuthorValidation\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -35,7 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Class to check the mentioned authors.
  *
- * @package ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\Command
+ * @package PhpCodeQuality\AuthorValidation\Command
  */
 class CheckAuthor extends Command
 {
@@ -45,7 +45,7 @@ class CheckAuthor extends Command
     protected function configure()
     {
         $this
-            ->setName('ccabs:tools:check-author')
+            ->setName('phpcq:check-author')
             ->setDescription('Check that all authors are mentioned in each file.')
             ->addOption(
                 'php-files',
@@ -121,14 +121,10 @@ class CheckAuthor extends Command
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = array();
         foreach (array(
-            'bower' =>
-                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
-            'composer' =>
-                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
-            'packages' =>
-                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
-            'php-files' =>
-                'ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
+            'bower'     => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
+            'composer'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
+            'packages'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
+            'php-files' => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
         ) as $option => $class) {
             if ($input->getOption($option)) {
                 $extractors[$option] = new $class($config, $output);

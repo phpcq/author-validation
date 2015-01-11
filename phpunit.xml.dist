@@ -12,7 +12,7 @@
          bootstrap="tests/bootstrap.php"
 >
     <testsuites>
-        <testsuite name="Build system author validation test suite">
+        <testsuite name="PHP code quality project Author Validation Test Suite">
             <directory>./tests</directory>
         </testsuite>
     </testsuites>
