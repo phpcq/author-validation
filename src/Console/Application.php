@@ -19,15 +19,12 @@
  * @filesource
  */
 
-namespace PhpCodeQuality\AuthorValidation\Command;
+namespace PhpCodeQuality\AuthorValidation\Console;
 
+use PhpCodeQuality\AuthorValidation\Command\CheckAuthor;
 use Symfony\Component\Console\Application as BaseApplication;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Class to check the mentioned authors.
