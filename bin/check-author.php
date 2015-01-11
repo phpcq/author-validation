@@ -40,9 +40,7 @@ set_error_handler(
 );
 
 use PhpCodeQuality\AuthorValidation\Command\CheckAuthor;
-use PhpCodeQuality\AuthorValidation\Command\Application;
-use Symfony\Component\Console\Input\InputDefinition;
-use Symfony\Component\Console\Input\InputInterface;
+use PhpCodeQuality\AuthorValidation\Console\Application;
 
 $application = new Application();
 $application->setAutoExit(true);

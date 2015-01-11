@@ -21,8 +21,8 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use ContPhpCodeQuality\AuthorValidation\AuthorExtractor;
-use ContPhpCodeQuality\AuthorValidation\Config;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\Config;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
