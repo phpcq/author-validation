@@ -169,11 +169,14 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
 
         $config->addCopyLeft('Copy Left <user@example.org>', 'File.php');
         $config->addCopyLeft('Copy Left <user@example.org>', array('File2.php', '/lib/**'));
+        $config->addCopyLeft('Copy Left2 <user@example.org>', 'some/dir/File4.php');
 
         $this->assertTrue($config->isCopyLeftAuthor('Copy Left <user@example.org>', '/some/dir/File.php'));
         $this->assertTrue($config->isCopyLeftAuthor('Copy Left <user@example.org>', '/some/dir/File2.php'));
         $this->assertTrue($config->isCopyLeftAuthor('Copy Left <user@example.org>', '/lib/dir/File.php'));
         $this->assertFalse($config->isCopyLeftAuthor('Copy Left <user@example.org>', '/some/dir/File3.php'));
         $this->assertFalse($config->isCopyLeftAuthor('Unknown <user@example.org>', '/some/dir/File3.php'));
+        $this->assertTrue($config->isCopyLeftAuthor('Copy Left2 <user@example.org>', '/lib/some/dir/File4.php'));
+        $this->assertTrue($config->isCopyLeftAuthor('Copy Left2 <user@example.org>', '/some/dir/File4.php'));
     }
 }
