@@ -104,7 +104,7 @@ class Config
      */
     private function matchPattern($pathName, $pattern)
     {
-        if (strpos($pattern, '/') === false) {
+        if ($pattern[0] !== '/') {
             $pattern = '**/' . $pattern;
         }
 
