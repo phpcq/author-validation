@@ -75,7 +75,8 @@ class CheckAuthor extends Command
                 '--config',
                 '-f',
                 InputOption::VALUE_REQUIRED,
-                'Path to configuration file.'
+                'Path to configuration file.',
+                '.check-author.yml'
             )
             ->addOption(
                 'ignore',
@@ -177,13 +178,13 @@ class CheckAuthor extends Command
             return 1;
         }
 
-        $configFile    = $input->getOption('config');
-        $defaultConfig = getcwd() . '/.check-author.yml';
-        if (!$configFile && is_file($defaultConfig)) {
-            $configFile = $defaultConfig;
+        $config = new Config();
+
+        $configFile = $input->getOption('config');
+        if (is_file($configFile)) {
+            $config->addFromYml($configFile);
         }
 
-        $config = new Config($configFile);
         $config
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
