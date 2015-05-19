@@ -79,6 +79,12 @@ class CheckAuthor extends Command
                 '.check-author.yml'
             )
             ->addOption(
+                '--do-not-ignore-well-known-bots',
+                null,
+                InputOption::VALUE_NONE,
+                'Skip our ignore-well-known-bots.yml configuration.'
+            )
+            ->addOption(
                 'ignore',
                 null,
                 (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
@@ -179,6 +185,13 @@ class CheckAuthor extends Command
         }
 
         $config = new Config();
+
+        if (!$input->getOption('do-not-ignore-well-known-bots')) {
+            $configFile = dirname(dirname(__DIR__))
+                . DIRECTORY_SEPARATOR . 'defaults'
+                . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
+            $config->addFromYml($configFile);
+        }
 
         $configFile = $input->getOption('config');
         if (is_file($configFile)) {

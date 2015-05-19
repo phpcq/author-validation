@@ -1,0 +1,5 @@
+ignore:
+  # Github (https://github.com) repository initialization
+  - Project Initializer <vservers@stage.ncm.at>
+  # Scrutinizer (https://scrutinizer-ci.com)
+  - Scrutinizer Auto-Fixer <auto-fixer@scrutinizer-ci.com>
