@@ -74,8 +74,8 @@ class CheckAuthor extends Command
             ->addOption(
                 '--config',
                 '-f',
-                InputOption::VALUE_NONE,
-                'Validate authors in packages.json.'
+                InputOption::VALUE_REQUIRED,
+                'Path to configuration file.'
             )
             ->addOption(
                 'ignore',
