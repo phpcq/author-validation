@@ -74,8 +74,15 @@ class CheckAuthor extends Command
             ->addOption(
                 '--config',
                 '-f',
+                InputOption::VALUE_REQUIRED,
+                'Path to configuration file.',
+                '.check-author.yml'
+            )
+            ->addOption(
+                '--do-not-ignore-well-known-bots',
+                null,
                 InputOption::VALUE_NONE,
-                'Validate authors in packages.json.'
+                'Skip our ignore-well-known-bots.yml configuration.'
             )
             ->addOption(
                 'ignore',
@@ -177,13 +184,20 @@ class CheckAuthor extends Command
             return 1;
         }
 
-        $configFile    = $input->getOption('config');
-        $defaultConfig = getcwd() . '/.check-author.yml';
-        if (!$configFile && is_file($defaultConfig)) {
-            $configFile = $defaultConfig;
+        $config = new Config();
+
+        if (!$input->getOption('do-not-ignore-well-known-bots')) {
+            $configFile = dirname(dirname(__DIR__))
+                . DIRECTORY_SEPARATOR . 'defaults'
+                . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
+            $config->addFromYml($configFile);
         }
 
-        $config = new Config($configFile);
+        $configFile = $input->getOption('config');
+        if (is_file($configFile)) {
+            $config->addFromYml($configFile);
+        }
+
         $config
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
