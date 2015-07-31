@@ -530,7 +530,7 @@ class Config
     }
 
     /**
-     * set a specific meta data for an author.
+     * Set a specific meta data for an author.
      *
      * @param string $author The author.
      * @param string $name   Metadata name.
