@@ -19,9 +19,9 @@
  * @filesource
  */
 
-namespace ContaoCommunityAlliance\BuildSystem\Tool\AuthorValidation\AuthorExtractor;
+namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use ContaoCommunityAlliance\BuildSystem\Repository\GitRepository;
+use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Finder\Finder;
 
 /**
