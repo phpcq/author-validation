@@ -1,21 +1,21 @@
 <?php
 
 /**
- * This file is part of contao-community-alliance/build-system-tool-author-validation.
+ * This file is part of phpcq/author-validation.
  *
- * (c) Contao Community Alliance <https://c-c-a.org>
+ * (c) 2014 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  *
  * This project is provided in good faith and hope to be usable by anyone.
  *
- * @package    contao-community-alliance/build-system-tool-author-validation
+ * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  Contao Community Alliance <https://c-c-a.org>
- * @link       https://github.com/contao-community-alliance/build-system-tool-author-validation
- * @license    https://github.com/contao-community-alliance/build-system-tool-author-validation/blob/master/LICENSE MIT
+ * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @link       https://github.com/phpcq/author-validation
+ * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @filesource
  */
 
@@ -61,7 +61,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
     /**
      * Check if git repository has uncommitted modifications.
      *
-     * @param GitRepository $git  The repository to extract all files from.
+     * @param GitRepository $git The repository to extract all files from.
      *
      * @return bool
      */
