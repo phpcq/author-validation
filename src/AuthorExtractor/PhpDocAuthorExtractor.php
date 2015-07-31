@@ -13,6 +13,7 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
+ * @author     David Molineus <mail@netzmacht.de>
  * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @link       https://github.com/phpcq/author-validation
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
