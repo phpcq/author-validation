@@ -38,12 +38,9 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     protected function loadFile($path)
     {
-        if (!is_file($path)) {
-            return null;
-        }
+        $composerJson = $this->fileData($path);
 
-        $composerJson = file_get_contents($path);
-        return (array) json_decode($composerJson, true);
+        return (null === $composerJson) ? null : (array) json_decode($composerJson, true);
     }
 
     /**
@@ -74,12 +71,29 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     public function getBuffer($path, $authors = null)
     {
-        $json = $this->loadFile($path);
-
-        if ($authors) {
-            $json = $this->setAuthors($json, $this->calculateUpdatedAuthors($path, $authors));
+        if (null === $authors) {
+            return $this->fileData($path);
         }
 
+        $json = $this->loadFile($path);
+        $json = $this->setAuthors($json, $this->calculateUpdatedAuthors($path, $authors));
+
         return $this->encodeData($json);
+    }
+
+    /**
+     * Load the file and return its contents.
+     *
+     * @param string $path Path to the json file.
+     *
+     * @return string|null
+     */
+    private function fileData($path)
+    {
+        if (!is_file($path)) {
+            return null;
+        }
+
+        return file_get_contents($path);
     }
 }
