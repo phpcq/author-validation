@@ -12,7 +12,7 @@
     <!-- we have to override the command as otherwise phpcq won't find it. We are the root repository. -->
     <target name="author-validation">
         <exec dir="${basedir}" executable="bin/check-author.php" failonerror="true" taskname="check-author">
-            <arg line=" --php-files --composer"/>
+            <arg line=" --php-files"/>
             <arg line="${basedir}"/>
         </exec>
     </target>
