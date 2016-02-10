@@ -136,16 +136,6 @@ class AuthorListComparator
             }
         }
 
-        /**
-         *
-         * diff --git a/bin/check-author.php b/bin/check-author.php
-         * index 6c031df..75a3d96 100755
-         * --- a/bin/check-author.php
-         * +++ b/bin/check-author.php
-         * @@ -12,7 +12,6 @@
-         *
-         */
-
         $this->patchSet[] =
             'diff ' . $patchFile . ' ' .$patchFile . "\n" .
             '--- ' . $patchFile . "\n" .

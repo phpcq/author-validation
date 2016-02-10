@@ -40,7 +40,7 @@ interface AuthorExtractor
      *
      * @return string[]
      *
-     * @see    AuthorExtractor::getFilePaths()
+     * @see AuthorExtractor::getFilePaths()
      */
     public function extractAuthorsFor($path);
 }

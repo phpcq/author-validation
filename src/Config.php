@@ -25,6 +25,8 @@ use Symfony\Component\Yaml\Yaml;
 
 /**
  * Configuration class that reads the .check-authors.yml file.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class Config
 {
