@@ -13,9 +13,9 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
- * @link       https://github.com/phpcq/author-validation
+ * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
+ * @link       https://github.com/phpcq/author-validation
  * @filesource
  */
 
@@ -25,6 +25,8 @@ use Symfony\Component\Yaml\Yaml;
 
 /**
  * Configuration class that reads the .check-authors.yml file.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class Config
 {

@@ -13,9 +13,10 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
- * @link       https://github.com/phpcq/author-validation
+ * @author     David Molineus <david.molineus@netzmacht.de>
+ * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
+ * @link       https://github.com/phpcq/author-validation
  * @filesource
  */
 
@@ -74,15 +75,6 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
             return '';
         }
 
-        $tokens    = token_get_all(substr($content, 0, ($closing + 2)));
-        $docBlocks = array_filter(
-            $tokens,
-            function ($item) {
-                return $item[0] == T_DOC_COMMENT;
-            }
-        );
-        $firstDocBlock = reset($docBlocks);
-
         $docBlock = substr($content, 0, ($closing + 2));
 
         if ($authors) {
@@ -117,21 +109,11 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
             $suffix     = trim(substr($line, (strpos($line, '@author') + 7)));
             $indention  = substr($line, 0, (strlen($line) - strlen($suffix)));
 
-            $found = false;
-            foreach ($newAuthors as $newIndex => $author) {
-                list($name, $email) = explode(' <', $author);
-
-                $name  = trim($name);
-                $email = trim(substr($email, 0, -1));
-                if ((strpos($line, $name) !== false) && (strpos($line, $email) !== false)) {
-                    $found = true;
-                    unset($newAuthors[$newIndex]);
-                    break;
-                }
-            }
+            $index = $this->searchAuthor($line, $newAuthors);
 
             // Obsolete entry, remove it.
-            if (!$found) {
+            if (false !== $index) {
+                unset($newAuthors[$index]);
                 $lines[$number] = null;
                 $cleaned[]      = $number;
             }
@@ -152,5 +134,30 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
         }
 
         return implode("\n", array_filter($lines));
+    }
+
+    /**
+     * Search the author in "line" in the passed array and return the index of the match or false if none matches.
+     *
+     * @param string   $line    The author to search for.
+     *
+     * @param string[] $authors The author list to search in.
+     *
+     * @return false|int
+     */
+    private function searchAuthor($line, $authors)
+    {
+        foreach ($authors as $index => $author) {
+            list($name, $email) = explode(' <', $author);
+
+            $name  = trim($name);
+            $email = trim(substr($email, 0, -1));
+            if ((strpos($line, $name) !== false) && (strpos($line, $email) !== false)) {
+                unset($authors[$index]);
+                return $index;
+            }
+        }
+
+        return false;
     }
 }
