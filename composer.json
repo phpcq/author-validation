@@ -39,8 +39,8 @@
         "phpspec/php-diff": "~1.0"
     },
     "require-dev": {
-        "phpcq/all-tasks": "~1.0",
-        "phpcq/coding-standard": "~1.0"
+        "phpcq/all-tasks": "~1.1",
+        "phpcq/coding-standard": "~2.0"
     },
     "extra": {
         "branch-alias": {

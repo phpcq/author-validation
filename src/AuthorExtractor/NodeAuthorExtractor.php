@@ -13,9 +13,9 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
- * @link       https://github.com/phpcq/author-validation
+ * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
+ * @link       https://github.com/phpcq/author-validation
  * @filesource
  */
 
@@ -87,19 +87,39 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
      */
     protected function setAuthors($json, $authors)
     {
-        $key = (!isset($json['authors']['contributors'])) ? 'author' : 'contributors';
-
-        // FIXME: this does not correctly update the data as we have two arrays to search.
+        // If no author set yet, use the first one as author.
+        if (!isset($json['author'])) {
+            $json['author'] = array_shift($authors);
+        }
+        $maintainer = $this->convertAuthor($json['author']);
 
         foreach ($authors as $author) {
-            list($name, $email) = explode(' <', $author);
+            $converted = $this->convertAuthor($author);
 
-            $json[$key][] = array(
-                'name'     => trim($name),
-                'email'    => trim(substr($email, 0, -1)),
-            );
+            // Ignore the maintainer here.
+            if ($converted['email'] === $maintainer['email']) {
+                continue;
+            }
+
+            $json['contributors'][] = $converted;
         }
 
         return $json;
+    }
+
+    /**
+     * Convert an author in the form of "Author Name <mail@example.org>" to author array.
+     *
+     * @param string $author The author.
+     *
+     * @return array
+     */
+    private function convertAuthor($author)
+    {
+        list($name, $email) = explode(' <', $author);
+        return array(
+            'name'     => trim($name),
+            'email'    => trim(substr($email, 0, -1)),
+        );
     }
 }
