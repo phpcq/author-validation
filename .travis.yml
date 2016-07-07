@@ -10,7 +10,15 @@ php:
 sudo: false
 
 install:
-  - composer install --prefer-dist --dev
+  - travis_retry composer self-update && composer --version
+  # We have to supply the branch alias here again as travis checks out a commit hash and therefore destroys the
+  # circular dependency phpcq/all-tasks -> phpcq/autoload-validation -> phpcq/all-tasks.
+  - >
+    if [ "x${TRAVIS_TAG}" != "x" ]; then
+      COMPOSER_ROOT_VERSION=${TRAVIS_TAG} travis_retry composer update --prefer-dist --no-interaction;
+    else
+      COMPOSER_ROOT_VERSION=dev-${TRAVIS_BRANCH} travis_retry composer update --prefer-dist --no-interaction;
+    fi
 
 script: ant -keep-going
 

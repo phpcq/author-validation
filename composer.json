@@ -34,8 +34,8 @@
     "require": {
         "php": ">=5.3.4",
         "bit3/git-php": "~1.1",
-        "symfony/console": "~2.3",
-        "symfony/finder": "~2.3",
+        "symfony/console": "~2.3 | ~3.0",
+        "symfony/finder": "~2.3 | ~3.0",
         "phpspec/php-diff": "~1.0"
     },
     "require-dev": {
@@ -44,7 +44,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-develop": "1.x-dev"
+            "dev-master": "1.1.x-dev",
+            "dev-develop": "1.2.x-dev"
         }
     },
     "bin": ["bin/check-author.php"],
