@@ -24,12 +24,13 @@ namespace PhpCodeQuality\AuthorValidation\Test\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\Config;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * Test class PhpDocAuthorExtractor.
  */
-class PhpDocAuthorExtractorTest extends \PHPUnit_Framework_TestCase
+class PhpDocAuthorExtractorTest extends TestCase
 {
     /**
      * Test the setAuthors() method.

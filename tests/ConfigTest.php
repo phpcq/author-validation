@@ -22,11 +22,12 @@
 namespace PhpCodeQuality\AuthorValidation\Test;
 
 use PhpCodeQuality\AuthorValidation\Config;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Test the config class.
  */
-class ConfigTest extends \PHPUnit_Framework_TestCase
+class ConfigTest extends TestCase
 {
     /**
      * Test the author mapping.
