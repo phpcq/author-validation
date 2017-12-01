@@ -20,7 +20,7 @@
  * @filesource
  */
 
-error_reporting(E_ALL);
+error_reporting(E_ALL & ~ E_USER_DEPRECATED);
 
 function includeIfExists($file)
 {
@@ -35,6 +35,9 @@ if ((!$loader = includeIfExists(__DIR__.'/../vendor/autoload.php')) && (!$loader
 
 set_error_handler(
     function ($errno, $errstr, $errfile, $errline ) {
+        if (0 === ($errno & error_reporting())) {
+            return;
+        }
         throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
     }
 );
