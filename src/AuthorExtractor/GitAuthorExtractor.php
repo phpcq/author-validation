@@ -88,7 +88,9 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      */
     private function getAuthorListFrom($path, $git)
     {
-        return $git->log()->format('%aN <%ae>')->follow()->execute($path);
+        return
+            $git->log()->format('%aN <%ae>')->follow()->execute($path) . PHP_EOL .
+            $git->log()->format('%aN <%ae>')->execute($path);
     }
 
     /**
