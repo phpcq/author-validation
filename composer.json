@@ -34,8 +34,8 @@
     "require": {
         "php": "^5.4 | ^7.0",
         "bit3/git-php": "~1.0",
-        "symfony/console": "~2.3 | ~3.0",
-        "symfony/finder": "~2.3 | ~3.0",
+        "symfony/console": "~2.3 | ~3.0 | ~4.0",
+        "symfony/finder": "~2.3 | ~3.0 | ~4.0",
         "phpspec/php-diff": "~1.0"
     },
     "require-dev": {
@@ -47,7 +47,5 @@
             "dev-develop": "1.2.x-dev"
         }
     },
-    "bin": ["bin/check-author.php"],
-    "prefer-stable": true,
-    "minimum-stability": "dev"
+    "bin": ["bin/check-author.php"]
 }
