@@ -19,7 +19,10 @@ install:
     if [ "x${TRAVIS_TAG}" != "x" ]; then
       COMPOSER_ROOT_VERSION=${TRAVIS_TAG} travis_retry composer update --prefer-dist --no-interaction;
     else
-      COMPOSER_ROOT_VERSION=dev-${TRAVIS_BRANCH} travis_retry composer update --prefer-dist --no-interaction;
+      COMPOSER_ROOT_VERSION=$([[ ${TRAVIS_BRANCH} =~ hotfix/([0-9.]*(-(alpha|beta|rc)[0-9]+)?) ]] \
+        && echo ${BASH_REMATCH[1]} \
+        || echo dev-${TRAVIS_BRANCH}) \
+        travis_retry composer update --prefer-dist --no-interaction;
     fi
 
 script: ant -keep-going
