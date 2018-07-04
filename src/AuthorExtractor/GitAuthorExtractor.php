@@ -201,8 +201,10 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     private function getAuthorListFrom($path, $git)
     {
         return
-            $git->log()->format('##%aN <%ae>##')->all()->follow()->graph()->execute($path) . PHP_EOL .
-            $git->log()->format('##%aN <%ae>##')->execute($path);
+            // git log --format="##%aN <%ae>##" --follow -- $path
+            $git->log()->format('##%aN <%ae>##')->follow()->execute($path) . PHP_EOL .
+            // git log --format="##%aN <%ae>##" --follow --reverse -- $path
+            $git->log()->format('##%aN <%ae>##')->follow()->reverse()->execute($path);
     }
 
     /**
