@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,8 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -40,16 +41,19 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
     /**
      * Convert the git binary output to a valid author list.
      *
-     * @param string[] $authors The author list to convert.
+     * @param string $authors The author list to convert.
      *
-     * @return string[]
+     * @return array
      */
     private function convertAuthorList($authors)
     {
         if (!$authors) {
             return array();
         }
-        return preg_split('~[\r\n]+~', $authors);
+
+        preg_match_all('/##(.*?)##/', $authors, $match);
+
+        return $match[1];
     }
 
     /**
@@ -84,13 +88,15 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      *
      * @param GitRepository $git  The repository to extract all files from.
      *
-     * @return string[]
+     * @return string
      */
     private function getAuthorListFrom($path, $git)
     {
         return
-            $git->log()->format('%aN <%ae>')->follow()->execute($path) . PHP_EOL .
-            $git->log()->format('%aN <%ae>')->execute($path);
+            // git log --format="##%aN <%ae>##" --follow -- $path
+            $git->log()->format('##%aN <%ae>##')->follow()->execute($path) . PHP_EOL .
+            // git log --format="##%aN <%ae>##" --follow --reverse -- $path
+            $git->log()->format('##%aN <%ae>##')->follow()->reverse()->execute($path);
     }
 
     /**
