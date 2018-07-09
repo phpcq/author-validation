@@ -144,9 +144,14 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             return array();
         }
 
-        preg_match_all('/##(.*?)##/', $authors, $match);
+        $authors = \json_decode($authors);
 
-        return $match[1];
+        return \array_map(
+            function ($author) {
+                return $author->name . ' <' . $author->email . '>';
+            },
+            $authors
+        );
     }
 
     /**
@@ -190,7 +195,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     }
 
     /**
-     * Retrieve the author list from the given path via calling git.
+     * Retrieve the author list from the given path via calling git. Return it as json string.
      *
      * @param string        $path The path to check.
      *
@@ -200,11 +205,17 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
      */
     private function getAuthorListFrom($path, $git)
     {
+        $format = '{"commit": "%H", "name": "%aN", "email": "%ae"},';
+
         return
-            // git log --format="##%aN <%ae>##" --follow -- $path
-            $git->log()->format('##%aN <%ae>##')->follow()->execute($path) . PHP_EOL .
-            // git log --format="##%aN <%ae>##" --follow --reverse -- $path
-            $git->log()->format('##%aN <%ae>##')->follow()->reverse()->execute($path);
+            '[' .
+            \trim(
+            // git log --format=$format --follow -- $path
+            $git->log()->format($format)->follow()->execute($path) .
+            // git log --format=$format --follow --m -- $path
+            $git->log()->format($format)->follow()->m()->execute($path)
+            , ',')
+            . ']';
     }
 
     /**
