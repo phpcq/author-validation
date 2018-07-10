@@ -216,7 +216,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
                 '[' .
                 \trim(
                     // git log --format=$format --no-merges
-                    $git->log()->format($format)->noMerges()->execute($file),
+                    $git->log()->follow()->format($format)->noMerges()->execute($file),
                     ','
                 )
                 . ']',
@@ -280,8 +280,11 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
         $processBuilder
             ->add($git->getConfig()->getGitExecutablePath())
             ->add('log')
+            ->add('--follow')
             ->add('--diff-filter=R')
-            ->add('-p');
+            ->add('-p')
+            ->add('--')
+            ->add($path);
 
         $process = $processBuilder->getProcess();
 
@@ -290,7 +293,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = rtrim($process->getOutput(), "\r\n") . "\n";
 
         $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
         if (false === \strpos($output, $relativePath)) {
@@ -303,30 +306,12 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
 
         preg_match_all('/rename(.*?)\n/', $output, $match);
 
-        return $this->getFileRenamingList([$relativePath], $match[1]);
-    }
-
-    /**
-     * Become the list of renaming file.
-     *
-     * @param array $fileHistory The file history.
-     * @param array $files       The files.
-     *
-     * @return array
-     */
-    private function getFileRenamingList(array $fileHistory, array &$files)
-    {
-        $toFile = ' to ' . \end($fileHistory);
-
-        while ($key = \array_search($toFile, $files)) {
-            $fromFile = $files[($key - 1)];
-            unset($files[$key], $files[($key - 1)]);
-
-            $fileHistory =
-                $this->getFileRenamingList(\array_merge($fileHistory, [\substr($fromFile, \strlen(' from '))]), $files);
-        }
-
-        return $fileHistory;
+        return \array_map(
+            function ($row) {
+                return \preg_replace('( to | from )', '', $row);
+            },
+            $match[1]
+        );
     }
 
     /**
