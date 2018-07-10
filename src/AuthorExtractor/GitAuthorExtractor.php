@@ -209,19 +209,20 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
 
         $format = '{"commit": "%H", "name": "%aN", "email": "%ae"},';
 
-        $log = \json_decode(
-            '[' .
-            \trim(
-                // git log --format=$format --no-merges
-                $git->log()->format($format)->noMerges()->execute(),
-                ','
-            )
-            . ']'
-        );
-
         $authors = [];
 
         foreach ($fileHistory as $file) {
+            $log = \json_decode(
+                '[' .
+                \trim(
+                    // git log --format=$format --no-merges
+                    $git->log()->format($format)->noMerges()->execute($file),
+                    ','
+                )
+                . ']',
+                true
+            );
+
             foreach ($log as $commit) {
                 if (isset($authors[$commit->commit])) {
                     continue;
