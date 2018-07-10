@@ -41,19 +41,22 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
     /**
      * Convert the git binary output to a valid author list.
      *
-     * @param string $authors The author list to convert.
+     * @param array $authors The author list to convert.
      *
      * @return array
      */
-    private function convertAuthorList($authors)
+    private function convertAuthorList(array $authors)
     {
         if (!$authors) {
             return array();
         }
 
-        preg_match_all('/##(.*?)##/', $authors, $match);
-
-        return $match[1];
+        return \array_map(
+            function ($author) {
+                return $author['name'] . ' <' . $author['email'] . '>';
+            },
+            $authors
+        );
     }
 
     /**
@@ -88,15 +91,119 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      *
      * @param GitRepository $git  The repository to extract all files from.
      *
-     * @return string
+     * @return array
+     *
+     * @throws GitException Throws an exception if the git command can not execute.
      */
     private function getAuthorListFrom($path, $git)
     {
-        return
-            // git log --format="##%aN <%ae>##" --follow -- $path
-            $git->log()->format('##%aN <%ae>##')->follow()->execute($path) . PHP_EOL .
-            // git log --format="##%aN <%ae>##" --follow --reverse -- $path
-            $git->log()->format('##%aN <%ae>##')->follow()->reverse()->execute($path);
+        $fileHistory = $this->renamingFileHistory($path, $git);
+
+        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci"},';
+
+        $authors = [];
+
+        foreach ($fileHistory as $file) {
+            $log = \json_decode(
+                '[' .
+                \trim(
+                    // git log --format=$format --no-merges
+                    $git->log()->follow()->format($format)->noMerges()->execute($file),
+                    ','
+                )
+                . ']',
+                true
+            );
+
+            foreach ($log as $commit) {
+                if (isset($authors[$commit['commit']])) {
+                    continue;
+                }
+
+                // Sadly no command in our git library for this.
+                $processBuilder = new ProcessBuilder();
+                $processBuilder->setWorkingDirectory($git->getRepositoryPath());
+                $processBuilder
+                    ->add($git->getConfig()->getGitExecutablePath())
+                    ->add('show')
+                    ->add($commit['commit'])
+                    ->add('--')
+                    ->add($file);
+
+                $process = $processBuilder->getProcess();
+
+                $git->getConfig()->getLogger()->debug(
+                    sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+                );
+
+                $process->run();
+                $output = rtrim($process->getOutput(), "\r\n");
+
+                if (!$process->isSuccessful()) {
+                    throw GitException::createFromProcess('Could not execute git command', $process);
+                }
+
+                if (!$output) {
+                    continue;
+                }
+
+                $authors[$commit['commit']] = $commit;
+            }
+        }
+
+        return $authors;
+    }
+
+    /**
+     * Retrieve the history of given search for renaming.
+     *
+     * @param string        $path The file path.
+     * @param GitRepository $git  The git repository.
+     *
+     * @return array
+     *
+     * @throws GitException Throws an exception if the git command can not execute.
+     */
+    private function renamingFileHistory($path, GitRepository $git)
+    {
+        // Sadly no command in our git library for this.
+        $processBuilder = new ProcessBuilder();
+        $processBuilder->setWorkingDirectory($git->getRepositoryPath());
+        $processBuilder
+            ->add($git->getConfig()->getGitExecutablePath())
+            ->add('log')
+            ->add('--follow')
+            ->add('--diff-filter=R')
+            ->add('-p')
+            ->add('--')
+            ->add($path);
+
+        $process = $processBuilder->getProcess();
+
+        $git->getConfig()->getLogger()->debug(
+            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+        );
+
+        $process->run();
+        $output = rtrim($process->getOutput(), "\r\n") . "\n";
+
+        $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
+        if (false === \strpos($output, $relativePath)) {
+            return [$relativePath];
+        }
+
+        if (!$process->isSuccessful()) {
+            throw GitException::createFromProcess('Could not execute git command', $process);
+        }
+
+        preg_match_all('/rename(.*?)\n/', $output, $match);
+
+        return \array_map(
+            function ($row) {
+                return \preg_replace('( to | from )', '', $row);
+            },
+            $match[1]
+        );
     }
 
     /**
