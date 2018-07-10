@@ -146,7 +146,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
 
         return \array_map(
             function ($author) {
-                return $author->name . ' <' . $author->email . '>';
+                return $author['name'] . ' <' . $author['email'] . '>';
             },
             $authors
         );
@@ -224,7 +224,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             );
 
             foreach ($log as $commit) {
-                if (isset($authors[$commit->commit])) {
+                if (isset($authors[$commit['commit']])) {
                     continue;
                 }
 
@@ -234,7 +234,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
                 $processBuilder
                     ->add($git->getConfig()->getGitExecutablePath())
                     ->add('show')
-                    ->add($commit->commit)
+                    ->add($commit['commit'])
                     ->add('--')
                     ->add($file);
 
@@ -255,7 +255,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
                     continue;
                 }
 
-                $authors[$commit->commit] = $commit;
+                $authors[$commit['commit']] = $commit;
             }
         }
 
