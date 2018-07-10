@@ -207,7 +207,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     {
         $fileHistory = $this->renamingFileHistory($path, $git);
 
-        $format = '{"commit": "%H", "name": "%aN", "email": "%ae"},';
+        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci"},';
 
         $authors = [];
 
