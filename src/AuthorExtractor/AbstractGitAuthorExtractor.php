@@ -26,7 +26,6 @@ use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 /**
  * Base class for author extraction from a git repository.
@@ -65,17 +64,16 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
     {
         $gitDir = $git->getRepositoryPath();
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($gitDir);
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('ls-tree')
-            ->add('HEAD')
-            ->add('-r')
-            ->add('--full-name')
-            ->add('--name-only');
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'ls-tree',
+            'HEAD',
+            '-r',
+            '--full-name',
+            '--name-only'
+        ];
 
-        $process = $processBuilder->getProcess();
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
