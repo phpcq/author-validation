@@ -44,4 +44,15 @@ interface AuthorExtractor
      * @see AuthorExtractor::getFilePaths()
      */
     public function extractAuthorsFor($path);
+
+    /**
+     * Retrieve the multiple contained authors for a path.
+     *
+     * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
+     *
+     * @return string[]
+     *
+     * @see AuthorExtractor::getFilePaths()
+     */
+    public function extractMultipleAuthorsFor($path);
 }

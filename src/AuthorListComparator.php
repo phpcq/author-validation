@@ -183,6 +183,7 @@ class AuthorListComparator
     {
         $validates        = true;
         $mentionedAuthors = $current->extractAuthorsFor($path);
+        $multipleAuthors  = $current->extractMultipleAuthorsFor($path);
         $wantedAuthors    = $should->extractAuthorsFor($path);
 
         // If current input is not valid, return.
@@ -222,6 +223,20 @@ class AuthorListComparator
                     \implode(PHP_EOL, $missingMentions)
                 )
             );
+            $validates = false;
+        }
+
+        if (\count($multipleAuthors)) {
+            $this->output->writeln(
+                \sprintf(
+                    'The file <info>%s</info> multiple author(s):' .
+                    PHP_EOL .
+                    '<comment>%s</comment>',
+                    $path,
+                    \implode(PHP_EOL, $multipleAuthors)
+                )
+            );
+
             $validates = false;
         }
 
