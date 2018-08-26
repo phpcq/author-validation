@@ -153,7 +153,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     /**
      * Retrieve the file path to use in reporting.
      *
-     * @return string
+     * @return array
      */
     public function getFilePaths()
     {
