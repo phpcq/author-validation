@@ -49,10 +49,10 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
     protected function doExtract($path)
     {
         if (!\preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
-            return array();
+            return [];
         }
 
-        $mentionedAuthors = array();
+        $mentionedAuthors = [];
         foreach ($matches[1] as $match) {
             $mentionedAuthors[] = $match[0];
         }
@@ -100,7 +100,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
         $lines      = \explode("\n", $docBlock);
         $lastAuthor = 0;
         $indention  = ' * @author     ';
-        $cleaned    = array();
+        $cleaned    = [];
 
         foreach ($lines as $number => $line) {
             if (\strpos($line, '@author') === false) {

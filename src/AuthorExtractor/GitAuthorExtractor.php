@@ -50,7 +50,7 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
     private function convertAuthorList(array $authors)
     {
         if (!$authors) {
-            return array();
+            return [];
         }
 
         return \array_map(

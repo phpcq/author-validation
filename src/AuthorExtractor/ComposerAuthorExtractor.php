@@ -48,7 +48,7 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
         }
 
         if (!(isset($composerJson['authors']) && \is_array($composerJson['authors']))) {
-            return array();
+            return [];
         }
 
         $config           = $this->config;
@@ -91,14 +91,14 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
      */
     protected function setAuthors($json, $authors)
     {
-        $json['authors'] = array();
+        $json['authors'] = [];
         foreach ($authors as $author) {
             list($name, $email) = \explode(' <', $author);
 
-            $config = array(
+            $config = [
                 'name'     => \trim($name),
                 'email'    => \trim(\substr($email, 0, -1))
-            );
+            ];
 
             if ($this->config->hasMetadata($author, 'homepage')) {
                 $config['homepage'] = $this->config->getMetadata($author, 'homepage');
