@@ -118,7 +118,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        $files = array();
+        $files = [];
         foreach (\explode(PHP_EOL, $output) as $file) {
             $absolutePath = $git->getRepositoryPath() . '/' . $file;
             if (!$this->config->isPathExcluded($absolutePath)) {
@@ -139,7 +139,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     private function convertAuthorList(array $authors)
     {
         if (!$authors) {
-            return array();
+            return [];
         }
 
         return \array_map(
@@ -157,7 +157,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
      */
     public function getFilePaths()
     {
-        $files = array();
+        $files = [];
         foreach ($this->config->getIncludedPaths() as $path) {
             $files = \array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
         }
@@ -340,7 +340,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        $config = array();
+        $config = [];
         foreach (\explode(PHP_EOL, $output) as $line) {
             list($name, $value)   = \explode(' ', $line, 2);
             $config[\trim($name)] = \trim($value);

@@ -90,14 +90,14 @@ class CheckAuthor extends Command
                 null,
                 (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
                 'Author to ignore (format: "John Doe <j.doe@acme.org>".',
-                array()
+                []
             )
             ->addOption(
                 'exclude',
                 null,
                 (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
                 'Path to exclude.',
-                array()
+                []
             )
             ->addOption(
                 'diff',
@@ -109,7 +109,7 @@ class CheckAuthor extends Command
                 'include',
                 (InputArgument::IS_ARRAY | InputArgument::OPTIONAL),
                 'The directory to start searching, must be a git repository or a sub dir in a git repository.',
-                array('.')
+                ['.']
             );
     }
 
@@ -127,13 +127,13 @@ class CheckAuthor extends Command
     protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $config)
     {
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
-        $extractors = array();
-        foreach (array(
-            'bower'     => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
-            'composer'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
-            'packages'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
-            'php-files' => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
-        ) as $option => $class) {
+        $extractors = [];
+        foreach ([
+                'bower'     => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
+                'composer'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
+                'packages'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
+                'php-files' => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
+            ] as $option => $class) {
             if ($input->getOption($option)) {
                 $extractors[$option] = new $class($config, $output);
             }

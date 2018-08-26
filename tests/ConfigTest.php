@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -40,10 +41,10 @@ class ConfigTest extends TestCase
 
         $config->addAuthorMap(array(
             'Single Source <single-real@example.org>' => 'Single Alias <single-alias@example.org>',
-            'Multiple Source <multiple-real@example.org>' => array(
+            'Multiple Source <multiple-real@example.org>' => [
                 'Multiple Alias1 <multiple-alias1@example.org>',
                 'Multiple Alias2 <multiple-alias2@example.org>'
-            )
+            ]
         ));
 
         $this->assertFalse($config->isAlias('Single Source <single-real@example.org>'));
@@ -88,7 +89,7 @@ class ConfigTest extends TestCase
         $config->aliasAuthor('Author Alias <single-alias@example.org>', 'Real Author <real@example.org>');
         $config->aliasAuthor('Ignored Alias <ignored-alias@example.org>', 'Real Author <real@example.org>');
         $config->ignoreAuthors(
-            array('Ignored Author <ignored@example.org>', 'Ignored Alias <ignored-alias@example.org>')
+            ['Ignored Author <ignored@example.org>', 'Ignored Alias <ignored-alias@example.org>']
         );
 
         $this->assertFalse($config->isAuthorIgnored('Author Alias <single-alias@example.org>'));
@@ -110,10 +111,10 @@ class ConfigTest extends TestCase
         $config->aliasAuthor('Ignored Alias <ignored-alias@example.org>', 'Real Author <real@example.org>');
         $config->aliasAuthor('Ignored Alias2 <ignored-alias@example.org>', 'Ignored Author <ignored@example.org>');
         $config->ignoreAuthors(
-            array(
+            [
                 'Ignored Author <ignored@example.org>',
                 'Ignored Alias <ignored-alias@example.org>'
-            )
+            ]
         );
 
         $this->assertFalse($config->isAlias('Real Author <real@example.org>'));
@@ -169,7 +170,7 @@ class ConfigTest extends TestCase
         $config = new Config();
 
         $config->addCopyLeft('Copy Left <user@example.org>', 'File.php');
-        $config->addCopyLeft('Copy Left <user@example.org>', array('File2.php', '/lib/**'));
+        $config->addCopyLeft('Copy Left <user@example.org>', ['File2.php', '/lib/**']);
         $config->addCopyLeft('Copy Left2 <user@example.org>', 'some/dir/File4.php');
 
         $this->assertTrue($config->isCopyLeftAuthor('Copy Left <user@example.org>', '/some/dir/File.php'));

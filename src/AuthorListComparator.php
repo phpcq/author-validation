@@ -159,7 +159,7 @@ class AuthorListComparator
      */
     private function determineSuperfluous($mentionedAuthors, $wantedAuthors, $path)
     {
-        $superfluous = array();
+        $superfluous = [];
         foreach (\array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
             if (!$this->config->isCopyLeftAuthor($author, $path)) {
                 $superfluous[$key] = $author;

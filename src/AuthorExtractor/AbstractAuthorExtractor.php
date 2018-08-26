@@ -81,7 +81,7 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
         if (!isset($this->cachedResult[$path])) {
             $result = $this->beautifyAuthorList($this->doExtract($path));
             if (\is_array($result)) {
-                $authors = array();
+                $authors = [];
                 foreach ($result as $author) {
                     $author = $this->config->getRealAuthor($author);
                     if ($author) {
@@ -113,7 +113,7 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
         $authors = \array_intersect_key($authors, \array_unique(\array_map('strtolower', $authors)));
         \usort($authors, 'strcasecmp');
 
-        $mapped = array();
+        $mapped = [];
         foreach ($authors as $author) {
             $mapped[\strtolower($author)] = $author;
         }
@@ -127,7 +127,7 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     public function getFilePaths()
     {
         $finder = $this->buildFinder();
-        $files  = array();
+        $files  = [];
 
         /** @var \SplFileInfo[] $finder */
         foreach ($finder as $file) {

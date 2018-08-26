@@ -47,7 +47,7 @@ class BowerAuthorExtractor extends JsonAuthorExtractor
         }
 
         if (isset($bowerJson['authors']) && \is_array($bowerJson['authors'])) {
-            return array();
+            return [];
         }
 
         $mentionedAuthors = \array_map(
@@ -83,7 +83,7 @@ class BowerAuthorExtractor extends JsonAuthorExtractor
      */
     protected function setAuthors($json, $authors)
     {
-        $json['authors'] = array();
+        $json['authors'] = [];
         foreach ($authors as $author) {
             $json['authors'][] = $author;
         }

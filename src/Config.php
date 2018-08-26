@@ -39,14 +39,14 @@ class Config
      *
      * @var array
      */
-    protected $mapping = array();
+    protected $mapping = [];
 
     /**
      * List of authors to be ignored.
      *
      * @var array
      */
-    protected $ignoredAuthors = array();
+    protected $ignoredAuthors = [];
 
     /**
      * List of copy-left authors.
@@ -56,21 +56,21 @@ class Config
      *
      * @var array
      */
-    protected $copyLeft = array();
+    protected $copyLeft = [];
 
     /**
      * List of paths to include.
      *
      * @var array
      */
-    protected $include = array();
+    protected $include = [];
 
     /**
      * List of paths to exclude.
      *
      * @var array
      */
-    protected $exclude = array();
+    protected $exclude = [];
 
     /**
      * Create a new instance.

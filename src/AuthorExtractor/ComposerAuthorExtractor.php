@@ -47,7 +47,7 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
         }
 
         if (!(isset($composerJson['authors']) && \is_array($composerJson['authors']))) {
-            return array();
+            return [];
         }
 
         $mentionedAuthors = \array_map(
@@ -79,15 +79,15 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
      */
     protected function setAuthors($json, $authors)
     {
-        $json['authors'] = array();
+        $json['authors'] = [];
         foreach ($authors as $author) {
             list($name, $email) = \explode(' <', $author);
 
-            $json['authors'][] = array(
+            $json['authors'][] = [
                 'name'     => \trim($name),
                 'email'    => \trim(\substr($email, 0, -1)),
                 'role'     => 'Developer'
-            );
+            ];
         }
 
         return $json;

@@ -46,7 +46,7 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
             return null;
         }
 
-        $mentionedAuthors = array();
+        $mentionedAuthors = [];
 
         if (isset($packagesJson['author'])) {
             if (isset($packagesJson['author']['email'])) {
@@ -118,9 +118,9 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
     private function convertAuthor($author)
     {
         list($name, $email) = \explode(' <', $author);
-        return array(
+        return [
             'name'     => \trim($name),
             'email'    => \trim(\substr($email, 0, -1)),
-        );
+        ];
     }
 }
