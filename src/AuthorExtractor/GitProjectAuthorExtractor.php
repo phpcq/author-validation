@@ -22,13 +22,17 @@
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitRepository;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Finder\Finder;
 
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
  */
-class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
+class GitProjectAuthorExtractor implements AuthorExtractor
 {
+    use AuthorExtractorTrait;
+    use GitAuthorExtractorTrait;
+
     /**
      * Optional attached finder for processing multiple files.
      *
@@ -39,7 +43,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
     /**
      * Convert the git binary output to a valid author list.
      *
-     * @param string[] $authors The author list to convert.
+     * @param string $authors The author list to convert.
      *
      * @return string[]
      */
@@ -81,7 +85,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
      *
      * @param GitRepository $git The repository to extract all files from.
      *
-     * @return string[]
+     * @return string
      */
     private function getAuthorListFrom($git)
     {
@@ -101,7 +105,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
 
         $authors = $this->convertAuthorList($this->getAuthorListFrom($git));
 
-        // Check if repository has uncomitted changes, so that someone is currently working on it.
+        // Check if repository has uncommitted changes, so that someone is currently working on it.
         if ($this->hasUncommittedChanges($git)) {
             $authors[] = $this->getCurrentUserInfo($git);
         }

@@ -22,12 +22,10 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use PhpCodeQuality\AuthorValidation\PatchingExtractor;
-
 /**
- * Abstract class for author extraction.
+ * Trait for author extraction.
  */
-abstract class AbstractPatchingAuthorExtractor extends AbstractAuthorExtractor implements PatchingExtractor
+trait PatchingAuthorExtractorTrait
 {
     /**
      * Calculate the updated author map.
@@ -44,5 +42,21 @@ abstract class AbstractPatchingAuthorExtractor extends AbstractAuthorExtractor i
     protected function calculateUpdatedAuthors($path, $authors)
     {
         return \array_merge(\array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getFilePaths()
+    {
+        $finder = $this->buildFinder();
+        $files  = [];
+
+        /** @var \SplFileInfo[] $finder */
+        foreach ($finder as $file) {
+            $files[] = $file->getPathname();
+        }
+
+        return $files;
     }
 }

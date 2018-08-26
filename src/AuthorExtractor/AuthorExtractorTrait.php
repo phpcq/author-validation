@@ -22,15 +22,14 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\Config;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
 /**
- * Abstract class for author extraction.
+ * Trait for author extraction.
  */
-abstract class AbstractAuthorExtractor implements AuthorExtractor
+trait AuthorExtractorTrait
 {
     /**
      * The configuration this extractor shall operate within.
@@ -122,32 +121,16 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function getFilePaths()
-    {
-        $finder = $this->buildFinder();
-        $files  = [];
-
-        /** @var \SplFileInfo[] $finder */
-        foreach ($finder as $file) {
-            $files[] = $file->getPathname();
-        }
-
-        return $files;
-    }
-
-    /**
      * Perform the extraction of authors.
      *
-     * @param string $path A path obtained via a prior call to AbstractAuthorExtractor::getFilePaths().
+     * @param string $path A path obtained via a prior call to AuthorExtractorTrait::getFilePaths().
      *
      * @return string[]|null The author list.
      */
     abstract protected function doExtract($path);
 
     /**
-     * Build a Symfony2 Finder instance that searches all included paths for files.
+     * Build a Symfony Finder instance that searches all included paths for files.
      *
      * The local config instance will be queried for included and excluded files and the Finder will be populated with
      * them.
@@ -155,6 +138,16 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
      * @return Finder
      */
     protected function buildFinder()
+    {
+        return $this->setupFinder();
+    }
+
+    /**
+     * Setup the Symfony Finder.
+     *
+     * @return Finder
+     */
+    protected function setupFinder()
     {
         $finder = new Finder();
         $finder

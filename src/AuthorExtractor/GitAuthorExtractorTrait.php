@@ -28,9 +28,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
 /**
- * Base class for author extraction from a git repository.
+ * Base trait for author extraction from a git repository.
  */
-abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
+trait GitAuthorExtractorTrait
 {
     /**
      * Create a git repository instance.

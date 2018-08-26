@@ -23,17 +23,24 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+
 /**
  * Extract the author information from a composer.json file.
  */
-class ComposerAuthorExtractor extends JsonAuthorExtractor
+class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
+    use AuthorExtractorTrait;
+    use PatchingAuthorExtractorTrait;
+    use JsonAuthorExtractorTrait;
+
     /**
      * {@inheritDoc}
      */
     protected function buildFinder()
     {
-        return parent::buildFinder()->name('composer.json');
+        return $this->setupFinder()->name('composer.json');
     }
 
     /**

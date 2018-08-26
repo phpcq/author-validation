@@ -23,11 +23,17 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+
 /**
  * Extract the author information from a phpDoc file doc block.
  */
-class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
+class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
+    use AuthorExtractorTrait;
+    use PatchingAuthorExtractorTrait;
+
     /**
      * The file to work on.
      *
@@ -40,7 +46,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     protected function buildFinder()
     {
-        return parent::buildFinder()->name('*.php');
+        return $this->setupFinder()->name('*.php');
     }
 
     /**
