@@ -97,6 +97,28 @@ trait AuthorExtractorTrait
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function extractMultipleAuthorsFor($path)
+    {
+        $authors = \array_count_values((array) $this->doExtract($path));
+        if (!\count($authors)) {
+            return [];
+        }
+
+        $multipleAuthors = [];
+        foreach ($authors as $author => $count) {
+            if (2 > $count) {
+                continue;
+            }
+
+            $multipleAuthors[] = $author . ' count: ' . $count;
+        }
+
+        return $multipleAuthors;
+    }
+
+    /**
      * Ensure the list is case insensitively unique and that the authors are sorted.
      *
      * @param string[]|null $authors The authors to work on.
