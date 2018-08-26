@@ -56,9 +56,9 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     /**
      * The cached result of calls to extract.
      *
-     * @var string
+     * @var array
      */
-    protected $cachedResult;
+    protected $cachedResult = [];
 
     /**
      * Create a new instance.
