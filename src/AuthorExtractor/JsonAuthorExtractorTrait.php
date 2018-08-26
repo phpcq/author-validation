@@ -22,18 +22,17 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\Json\JsonFormatter;
 
 /**
- * Abstract class for author extraction.
+ * Trait for author extraction.
  */
-abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
+trait JsonAuthorExtractorTrait
 {
     /**
      * Read the .json file and return it as array.
      *
-     * @param string $path A path obtained via a prior call to JsonAuthorExtractor::getFilePaths().
+     * @param string $path A path obtained via a prior call to JsonAuthorExtractorTrait::getFilePaths().
      *
      * @return array
      */

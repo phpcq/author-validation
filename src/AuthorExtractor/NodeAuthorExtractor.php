@@ -22,17 +22,24 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+
 /**
  * Extract the author information from a nodeJs packages.json file.
  */
-class NodeAuthorExtractor extends JsonAuthorExtractor
+class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
+    use AuthorExtractorTrait;
+    use PatchingAuthorExtractorTrait;
+    use JsonAuthorExtractorTrait;
+
     /**
      * {@inheritDoc}
      */
     protected function buildFinder()
     {
-        return parent::buildFinder()->name('packages.json');
+        return $this->setupFinder()->name('packages.json');
     }
 
     /**

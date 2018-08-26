@@ -22,12 +22,10 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use PhpCodeQuality\AuthorValidation\PatchingExtractor;
-
 /**
- * Abstract class for author extraction.
+ * Trait for author extraction.
  */
-abstract class AbstractPatchingAuthorExtractor extends AbstractAuthorExtractor implements PatchingExtractor
+trait PatchingAuthorExtractorTrait
 {
     /**
      * Calculate the updated author map.

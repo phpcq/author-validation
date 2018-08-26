@@ -24,6 +24,7 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitException;
 use Bit3\GitPhp\GitRepository;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -32,8 +33,10 @@ use Symfony\Component\Process\Process;
 /**
  * Extract the author information from a git repository.
  */
-class GitAuthorExtractor extends AbstractAuthorExtractor
+class GitAuthorExtractor implements AuthorExtractor
 {
+    use AuthorExtractorTrait;
+
     /**
      * Optional attached finder for processing multiple files.
      *
