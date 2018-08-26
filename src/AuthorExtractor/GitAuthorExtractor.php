@@ -72,16 +72,16 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     private function determineGitRoot($path)
     {
         // @codingStandardsIgnoreStart
-        while (strlen($path) > 1) {
+        while (\strlen($path) > 1) {
             // @codingStandardsIgnoreEnd
-            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
                 return $path;
             }
 
-            $path = dirname($path);
+            $path = \dirname($path);
         }
 
-        throw new \RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
+        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
     }
 
     /**
@@ -108,21 +108,21 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
         $process = new Process($arguments, $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = \rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
         $files = array();
-        foreach (explode(PHP_EOL, $output) as $file) {
+        foreach (\explode(PHP_EOL, $output) as $file) {
             $absolutePath = $git->getRepositoryPath() . '/' . $file;
             if (!$this->config->isPathExcluded($absolutePath)) {
-                $files[trim($absolutePath)] = trim($absolutePath);
+                $files[\trim($absolutePath)] = \trim($absolutePath);
             }
         }
 
@@ -159,7 +159,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     {
         $files = array();
         foreach ($this->config->getIncludedPaths() as $path) {
-            $files = array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
+            $files = \array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
         }
 
         return $files;
@@ -176,12 +176,12 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
      */
     private function isDirtyFile($path, $git)
     {
-        if (!is_file($path)) {
+        if (!\is_file($path)) {
             return false;
         }
 
         $status  = $git->status()->short()->getIndexStatus();
-        $relPath = substr($path, (strlen($git->getRepositoryPath()) + 1));
+        $relPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -237,11 +237,11 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
 
                 $process = new Process($arguments, $git->getRepositoryPath());
                 $git->getConfig()->getLogger()->debug(
-                    sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+                    \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
                 );
 
                 $process->run();
-                $output = rtrim($process->getOutput(), "\r\n");
+                $output = \rtrim($process->getOutput(), "\r\n");
 
                 if (!$process->isSuccessful()) {
                     throw GitException::createFromProcess('Could not execute git command', $process);
@@ -298,7 +298,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        preg_match_all('/rename(.*?)\n/', $output, $match);
+        \preg_match_all('/rename(.*?)\n/', $output, $match);
 
         return \array_map(
             function ($row) {
@@ -330,24 +330,24 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
         $process = new Process($arguments, $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = \rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
         $config = array();
-        foreach (explode(PHP_EOL, $output) as $line) {
-            list($name, $value)  = explode(' ', $line, 2);
-            $config[trim($name)] = trim($value);
+        foreach (\explode(PHP_EOL, $output) as $line) {
+            list($name, $value)   = \explode(' ', $line, 2);
+            $config[\trim($name)] = \trim($value);
         }
 
         if (isset($config['user.name']) && $config['user.email']) {
-            return sprintf('%s <%s>', $config['user.name'], $config['user.email']);
+            return \sprintf('%s <%s>', $config['user.name'], $config['user.email']);
         }
 
         return '';

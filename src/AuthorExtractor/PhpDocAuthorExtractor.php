@@ -48,7 +48,7 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     protected function doExtract($path)
     {
-        if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
+        if (!\preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
             return array();
         }
 
@@ -65,18 +65,18 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     public function getBuffer($path, $authors = null)
     {
-        if (!is_file($path)) {
+        if (!\is_file($path)) {
             return '';
         }
 
         // 4k ought to be enough of a file header for anyone (I hope).
-        $content = file_get_contents($path, null, null, null, 4096);
-        $closing = strpos($content, '*/');
+        $content = \file_get_contents($path, null, null, null, 4096);
+        $closing = \strpos($content, '*/');
         if ($closing === false) {
             return '';
         }
 
-        $docBlock = substr($content, 0, ($closing + 2));
+        $docBlock = \substr($content, 0, ($closing + 2));
 
         if ($authors) {
             return $this->setAuthors($docBlock, $this->calculateUpdatedAuthors($path, $authors));
@@ -97,18 +97,18 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
     protected function setAuthors($docBlock, $authors)
     {
         $newAuthors = $authors;
-        $lines      = explode("\n", $docBlock);
+        $lines      = \explode("\n", $docBlock);
         $lastAuthor = 0;
         $indention  = ' * @author     ';
         $cleaned    = array();
 
         foreach ($lines as $number => $line) {
-            if (strpos($line, '@author') === false) {
+            if (\strpos($line, '@author') === false) {
                 continue;
             }
             $lastAuthor = $number;
-            $suffix     = trim(substr($line, (strpos($line, '@author') + 7)));
-            $indention  = substr($line, 0, (strlen($line) - strlen($suffix)));
+            $suffix     = \trim(\substr($line, (\strpos($line, '@author') + 7)));
+            $indention  = \substr($line, 0, (\strlen($line) - \strlen($suffix)));
 
             $index = $this->searchAuthor($line, $newAuthors);
 
@@ -123,18 +123,18 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
         if (!empty($newAuthors)) {
             // Fill the gaps we just made.
             foreach ($cleaned as $number) {
-                $lines[$number] = $indention . array_shift($newAuthors);
+                $lines[$number] = $indention . \array_shift($newAuthors);
             }
 
             if ($lastAuthor == 0) {
-                $lastAuthor = (count($lines) - 2);
+                $lastAuthor = (\count($lines) - 2);
             }
-            while ($author = array_shift($newAuthors)) {
+            while ($author = \array_shift($newAuthors)) {
                 $lines[$lastAuthor++] = $indention . $author;
             }
         }
 
-        return implode("\n", array_filter($lines));
+        return \implode("\n", \array_filter($lines));
     }
 
     /**
@@ -149,11 +149,11 @@ class PhpDocAuthorExtractor extends AbstractPatchingAuthorExtractor
     private function searchAuthor($line, $authors)
     {
         foreach ($authors as $index => $author) {
-            list($name, $email) = explode(' <', $author);
+            list($name, $email) = \explode(' <', $author);
 
-            $name  = trim($name);
-            $email = trim(substr($email, 0, -1));
-            if ((strpos($line, $name) !== false) && (strpos($line, $email) !== false)) {
+            $name  = \trim($name);
+            $email = \trim(\substr($email, 0, -1));
+            if ((\strpos($line, $name) !== false) && (\strpos($line, $email) !== false)) {
                 unset($authors[$index]);
                 return $index;
             }

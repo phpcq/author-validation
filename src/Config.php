@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -92,7 +93,7 @@ class Config
      */
     private function arrayKey($author)
     {
-        return strtolower(trim($author));
+        return \strtolower(\trim($author));
     }
 
     /**
@@ -110,7 +111,7 @@ class Config
             $pattern = '**/' . $pattern;
         }
 
-        if (fnmatch($pattern, $pathName)) {
+        if (\fnmatch($pattern, $pathName)) {
             return true;
         }
 
@@ -148,11 +149,11 @@ class Config
      */
     public function addFromYml($fileName)
     {
-        if (!is_readable($fileName)) {
+        if (!\is_readable($fileName)) {
             throw new \InvalidArgumentException('Could not read config file: ' . $fileName);
         }
 
-        $config = Yaml::parse(file_get_contents($fileName));
+        $config = Yaml::parse(\file_get_contents($fileName));
 
         if (isset($config['mapping'])) {
             $this->addAuthorMap($config['mapping']);
@@ -208,7 +209,7 @@ class Config
     public function addAuthorMap($mapping)
     {
         foreach ($mapping as $author => $aliases) {
-            if (is_array($aliases)) {
+            if (\is_array($aliases)) {
                 foreach ($aliases as $alias) {
                     $this->aliasAuthor($alias, $author);
                 }
@@ -265,7 +266,7 @@ class Config
      */
     public function ignoreAuthor($author)
     {
-        $this->ignoredAuthors[$this->arrayKey($author)] = trim($author);
+        $this->ignoredAuthors[$this->arrayKey($author)] = \trim($author);
 
         return $this;
     }
@@ -309,7 +310,7 @@ class Config
      */
     public function addCopyLeft($author, $pattern)
     {
-        if (is_array($pattern)) {
+        if (\is_array($pattern)) {
             foreach ($pattern as $singlePattern) {
                 $this->addCopyLeft($author, $singlePattern);
             }
@@ -406,7 +407,7 @@ class Config
      */
     public function getIncludedPaths()
     {
-        return array_values($this->include);
+        return \array_values($this->include);
     }
 
     /**
@@ -458,6 +459,6 @@ class Config
      */
     public function getExcludedPaths()
     {
-        return array_values($this->exclude);
+        return \array_values($this->exclude);
     }
 }

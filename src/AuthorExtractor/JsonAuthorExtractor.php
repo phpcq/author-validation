@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -40,7 +41,7 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
     {
         $composerJson = $this->fileData($path);
 
-        return (null === $composerJson) ? null : (array) json_decode($composerJson, true);
+        return (null === $composerJson) ? null : (array) \json_decode($composerJson, true);
     }
 
     /**
@@ -90,10 +91,10 @@ abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
      */
     private function fileData($path)
     {
-        if (!is_file($path)) {
+        if (!\is_file($path)) {
             return null;
         }
 
-        return file_get_contents($path);
+        return \file_get_contents($path);
     }
 }
