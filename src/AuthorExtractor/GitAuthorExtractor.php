@@ -72,12 +72,12 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      */
     private function isDirtyFile($path, $git)
     {
-        if (!is_file($path)) {
+        if (!\is_file($path)) {
             return false;
         }
 
         $status  = $git->status()->short()->getIndexStatus();
-        $relPath = substr($path, (strlen($git->getRepositoryPath()) + 1));
+        $relPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -133,11 +133,11 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
 
                 $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
                 $git->getConfig()->getLogger()->debug(
-                    sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+                    \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
                 );
 
                 $process->run();
-                $output = rtrim($process->getOutput(), "\r\n");
+                $output = \rtrim($process->getOutput(), "\r\n");
 
                 if (!$process->isSuccessful()) {
                     throw GitException::createFromProcess('Could not execute git command', $process);
@@ -194,7 +194,7 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        preg_match_all('/rename(.*?)\n/', $output, $match);
+        \preg_match_all('/rename(.*?)\n/', $output, $match);
 
         return \array_map(
             function ($row) {

@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,8 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -195,14 +196,14 @@ class CheckAuthor extends Command
         $config = new Config();
 
         if (!$input->getOption('do-not-ignore-well-known-bots')) {
-            $configFile = dirname(dirname(__DIR__))
+            $configFile = \dirname(\dirname(__DIR__))
                 . DIRECTORY_SEPARATOR . 'defaults'
                 . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
             $config->addFromYml($configFile);
         }
 
         $configFile = $input->getOption('config');
-        if (is_file($configFile)) {
+        if (\is_file($configFile)) {
             $config->addFromYml($configFile);
         }
 
@@ -210,9 +211,9 @@ class CheckAuthor extends Command
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
             ->includePaths(
-                array_filter(array_map(
+                \array_filter(\array_map(
                     function ($arg) {
-                        return realpath($arg);
+                        return \realpath($arg);
                     },
                     $input->getArgument('include')
                 ))

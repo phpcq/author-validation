@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,8 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -113,8 +114,8 @@ class AuthorListComparator
             return false;
         }
 
-        $original = explode("\n", $extractor->getBuffer($path));
-        $new      = explode("\n", $extractor->getBuffer($path, $wantedAuthors));
+        $original = \explode("\n", $extractor->getBuffer($path));
+        $new      = \explode("\n", $extractor->getBuffer($path, $wantedAuthors));
         $diff     = new \Diff($original, $new);
         $patch    = $diff->render($this->diff);
 
@@ -125,12 +126,12 @@ class AuthorListComparator
         $patchFile = $path;
 
         foreach ($this->config->getIncludedPaths() as $prefix) {
-            $prefixLength = strlen($prefix);
-            if (substr($path, 0, $prefixLength) === $prefix) {
-                $patchFile = substr($path, $prefixLength);
+            $prefixLength = \strlen($prefix);
+            if (\substr($path, 0, $prefixLength) === $prefix) {
+                $patchFile = \substr($path, $prefixLength);
 
                 if ($patchFile[0] == '/') {
-                    $patchFile = substr($patchFile, 1);
+                    $patchFile = \substr($patchFile, 1);
                 }
                 break;
             }
@@ -159,7 +160,7 @@ class AuthorListComparator
     private function determineSuperfluous($mentionedAuthors, $wantedAuthors, $path)
     {
         $superfluous = array();
-        foreach (array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
+        foreach (\array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
             if (!$this->config->isCopyLeftAuthor($author, $path)) {
                 $superfluous[$key] = $author;
             }
@@ -188,7 +189,7 @@ class AuthorListComparator
         if ($mentionedAuthors === null) {
             if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $this->output->writeln(
-                    sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
+                    \sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
                 );
             }
 
@@ -196,29 +197,29 @@ class AuthorListComparator
         }
 
         $superfluousMentions = $this->determineSuperfluous($mentionedAuthors, $wantedAuthors, $path);
-        $missingMentions     = array_diff_key($wantedAuthors, $mentionedAuthors);
+        $missingMentions     = \array_diff_key($wantedAuthors, $mentionedAuthors);
 
-        if (count($superfluousMentions)) {
+        if (\count($superfluousMentions)) {
             $this->output->writeln(
-                sprintf(
+                \sprintf(
                     'The file <info>%s</info> is mentioning superfluous author(s):' .
                     PHP_EOL .
                     '<comment>%s</comment>',
                     $path,
-                    implode(PHP_EOL, $superfluousMentions)
+                    \implode(PHP_EOL, $superfluousMentions)
                 )
             );
             $validates = false;
         }
 
-        if (count($missingMentions)) {
+        if (\count($missingMentions)) {
             $this->output->writeln(
-                sprintf(
+                \sprintf(
                     'The file <info>%s</info> is not mentioning its author(s):' .
                     PHP_EOL .
                     '<comment>%s</comment>',
                     $path,
-                    implode(PHP_EOL, $missingMentions)
+                    \implode(PHP_EOL, $missingMentions)
                 )
             );
             $validates = false;
@@ -246,7 +247,7 @@ class AuthorListComparator
     {
         $shouldPaths  = $should->getFilePaths();
         $currentPaths = $current->getFilePaths();
-        $allPaths     = array_intersect($shouldPaths, $currentPaths);
+        $allPaths     = \array_intersect($shouldPaths, $currentPaths);
         $validates    = true;
 
         foreach ($allPaths as $pathname) {

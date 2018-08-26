@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -79,12 +80,12 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
     {
         if (!isset($this->cachedResult[$path])) {
             $result = $this->beautifyAuthorList($this->doExtract($path));
-            if (is_array($result)) {
+            if (\is_array($result)) {
                 $authors = array();
                 foreach ($result as $author) {
                     $author = $this->config->getRealAuthor($author);
                     if ($author) {
-                        $authors[strtolower($author)] = $author;
+                        $authors[\strtolower($author)] = $author;
                     }
                 }
                 $result = $authors;
@@ -109,12 +110,12 @@ abstract class AbstractAuthorExtractor implements AuthorExtractor
             return null;
         }
 
-        $authors = array_intersect_key($authors, array_unique(array_map('strtolower', $authors)));
-        usort($authors, 'strcasecmp');
+        $authors = \array_intersect_key($authors, \array_unique(\array_map('strtolower', $authors)));
+        \usort($authors, 'strcasecmp');
 
         $mapped = array();
         foreach ($authors as $author) {
-            $mapped[strtolower($author)] = $author;
+            $mapped[\strtolower($author)] = $author;
         }
 
         return $mapped;
