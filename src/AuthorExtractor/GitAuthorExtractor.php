@@ -27,7 +27,7 @@ use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Process\ProcessBuilder;
+use Symfony\Component\Process\Process;
 
 /**
  * Extract the author information from a git repository.
@@ -95,19 +95,17 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
      */
     private function getAllFilesFromGit($git)
     {
-        $gitDir = $git->getRepositoryPath();
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($gitDir);
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('ls-tree')
-            ->add('HEAD')
-            ->add('-r')
-            ->add('--full-name')
-            ->add('--name-only');
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'ls-tree',
+            'HEAD',
+            '-r',
+            '--full-name',
+            '--name-only'
+        ];
 
-        $process = $processBuilder->getProcess();
+        $process = new Process($arguments, $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
@@ -122,7 +120,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
 
         $files = array();
         foreach (explode(PHP_EOL, $output) as $file) {
-            $absolutePath = $gitDir . '/' . $file;
+            $absolutePath = $git->getRepositoryPath() . '/' . $file;
             if (!$this->config->isPathExcluded($absolutePath)) {
                 $files[trim($absolutePath)] = trim($absolutePath);
             }
@@ -229,17 +227,15 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
                 }
 
                 // Sadly no command in our git library for this.
-                $processBuilder = new ProcessBuilder();
-                $processBuilder->setWorkingDirectory($git->getRepositoryPath());
-                $processBuilder
-                    ->add($git->getConfig()->getGitExecutablePath())
-                    ->add('show')
-                    ->add($commit['commit'])
-                    ->add('--')
-                    ->add($file);
+                $arguments = [
+                    $git->getConfig()->getGitExecutablePath(),
+                    'show',
+                    $commit['commit'],
+                    '--',
+                    $file
+                ];
 
-                $process = $processBuilder->getProcess();
-
+                $process = new Process($arguments, $git->getRepositoryPath());
                 $git->getConfig()->getLogger()->debug(
                     sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
                 );
@@ -275,19 +271,17 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     private function renamingFileHistory($path, GitRepository $git)
     {
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($git->getRepositoryPath());
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('log')
-            ->add('--follow')
-            ->add('--diff-filter=R')
-            ->add('-p')
-            ->add('--')
-            ->add($path);
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'log',
+            '--follow',
+            '--diff-filter=R',
+            '-p',
+            '--',
+            $path
+        ];
 
-        $process = $processBuilder->getProcess();
-
+        $process = new Process($arguments, $git->getRepositoryPath());
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
@@ -326,15 +320,14 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
     private function getCurrentUserInfo($git)
     {
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($git->getRepositoryPath());
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('config')
-            ->add('--get-regexp')
-            ->add('user.[name|email]');
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'config',
+            '--get-regexp',
+            'user.[name|email]'
+        ];
 
-        $process = $processBuilder->getProcess();
+        $process = new Process($arguments, $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
