@@ -56,16 +56,6 @@ class JsonFormatter
     {
         // This is:
         // JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
-        $json = \json_encode($data, 448);
-        // compact brackets to follow recent php versions
-        if (PHP_VERSION_ID < 50428
-            || (PHP_VERSION_ID >= 50500 && PHP_VERSION_ID < 50512)
-            || (\defined('JSON_C_VERSION') && \version_compare(\phpversion('json'), '1.3.6', '<'))
-        ) {
-            $json = \preg_replace('/\[\s+\]/', '[]', $json);
-            $json = \preg_replace('/\{\s+\}/', '{}', $json);
-        }
-
-        return $json;
+        return \json_encode($data, 448);
     }
 }
