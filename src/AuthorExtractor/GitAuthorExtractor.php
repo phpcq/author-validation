@@ -105,7 +105,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             '--name-only'
         ];
 
-        $process = new Process($arguments, $git->getRepositoryPath());
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
@@ -235,7 +235,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
                     $file
                 ];
 
-                $process = new Process($arguments, $git->getRepositoryPath());
+                $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
                 $git->getConfig()->getLogger()->debug(
                     sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
                 );
@@ -281,7 +281,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             $path
         ];
 
-        $process = new Process($arguments, $git->getRepositoryPath());
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
@@ -327,7 +327,7 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
             'user.[name|email]'
         ];
 
-        $process = new Process($arguments, $git->getRepositoryPath());
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
@@ -373,5 +373,23 @@ class GitAuthorExtractor extends AbstractAuthorExtractor
         }
 
         return $authors;
+    }
+
+    /**
+     * Prepare the command line arguments for the symfony process.
+     *
+     * @param array $arguments The command line arguments for the symfony process.
+     *
+     * @return array|string
+     */
+    private function prepareProcessArguments(array $arguments)
+    {
+        $reflection = new \ReflectionClass('Symfony\Component\Process\ProcessUtils');
+
+        if (!$reflection->hasMethod('escapeArgument')) {
+            return $arguments;
+        }
+
+        return \implode(' ', \array_map(array('Symfony\Component\Process\ProcessUtils', 'escapeArgument'), $arguments));
     }
 }
