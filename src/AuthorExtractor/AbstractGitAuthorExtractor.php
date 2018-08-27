@@ -13,7 +13,6 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @author     Tristan Lins <tristan@lins.io>
  * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
@@ -26,6 +25,7 @@ use Bit3\GitPhp\GitException;
 use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessBuilder;
 
 /**
@@ -150,18 +150,17 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
     protected function getCurrentUserInfo($git)
     {
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($git->getRepositoryPath());
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('config')
-            ->add('--get-regexp')
-            ->add('user.[name|email]');
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'config',
+            '--get-regexp',
+            'user.[name|email]'
+        ];
 
-        $process = $processBuilder->getProcess();
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
@@ -182,5 +181,23 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
         }
 
         return '';
+    }
+
+    /**
+     * Prepare the command line arguments for the symfony process.
+     *
+     * @param array $arguments The command line arguments for the symfony process.
+     *
+     * @return array|string
+     */
+    protected function prepareProcessArguments(array $arguments)
+    {
+        $reflection = new \ReflectionClass('Symfony\Component\Process\ProcessUtils');
+
+        if (!$reflection->hasMethod('escapeArgument')) {
+            return $arguments;
+        }
+
+        return \implode(' ', \array_map(array('Symfony\Component\Process\ProcessUtils', 'escapeArgument'), $arguments));
     }
 }

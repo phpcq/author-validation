@@ -23,8 +23,10 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use Bit3\GitPhp\GitException;
 use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Process\Process;
 
 /**
  * Extract the author information from a git repository.
@@ -121,17 +123,15 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
                 }
 
                 // Sadly no command in our git library for this.
-                $processBuilder = new ProcessBuilder();
-                $processBuilder->setWorkingDirectory($git->getRepositoryPath());
-                $processBuilder
-                    ->add($git->getConfig()->getGitExecutablePath())
-                    ->add('show')
-                    ->add($commit['commit'])
-                    ->add('--')
-                    ->add($file);
+                $arguments = [
+                    $git->getConfig()->getGitExecutablePath(),
+                    'show',
+                    $commit['commit'],
+                    '--',
+                    $file
+                ];
 
-                $process = $processBuilder->getProcess();
-
+                $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
                 $git->getConfig()->getLogger()->debug(
                     sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
                 );
@@ -167,19 +167,17 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
     private function renamingFileHistory($path, GitRepository $git)
     {
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($git->getRepositoryPath());
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('log')
-            ->add('--follow')
-            ->add('--diff-filter=R')
-            ->add('-p')
-            ->add('--')
-            ->add($path);
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'log',
+            '--follow',
+            '--diff-filter=R',
+            '-p',
+            '--',
+            $path
+        ];
 
-        $process = $processBuilder->getProcess();
-
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
