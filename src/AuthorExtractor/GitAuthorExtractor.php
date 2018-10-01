@@ -175,7 +175,7 @@ class GitAuthorExtractor implements AuthorExtractor
             $git->getConfig()->getGitExecutablePath(),
             'log',
             '--follow',
-            '--diff-filter=R',
+            '--diff-filter=RC',
             '-p',
             '--',
             $path
@@ -198,32 +198,32 @@ class GitAuthorExtractor implements AuthorExtractor
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        \preg_match_all('/rename(.*?)\n/', $output, $match);
+        \preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $output, $match);
 
         $matchRenaming = [];
-        foreach ($match[1] as $index => $row) {
+        foreach ($match[2] as $index => $row) {
             // Put the first renaming to the match list.
             if (2 !== \count($matchRenaming)) {
-                $matchRenaming[\md5($row)] = \preg_replace('( to | from )', '', $row);
+                $matchRenaming[\md5($row)] = \preg_replace('(to |from )', '', $row);
 
                 continue;
             }
 
-            \preg_match('( to | from )', $row, $renamingDirection);
+            \preg_match('(to |from )', $row, $renamingDirection);
             if (' from ' === $renamingDirection[0]) {
                 continue;
             }
 
-            $compareHash = \md5(' from ' . \preg_replace('( to )', '', $row));
-            // If not found in the renaiming file in the self row sequence, we are break here.
+            $compareHash = \md5('from ' . \preg_replace('(to )', '', $row));
+            // If not found in the renaiming file list, we are continue here.
             if (!\array_key_exists($compareHash, $matchRenaming)) {
-                break;
+                continue;
             }
 
-            $fromRenaming = $match[1][($index - 1)];
+            $fromRenaming = $match[2][($index - 1)];
 
-            $matchRenaming[\md5($fromRenaming)] = \preg_replace('( from )', '', $fromRenaming);
-            $matchRenaming[\md5($row)]          = \preg_replace('( to )', '', $row);
+            $matchRenaming[\md5($fromRenaming)] = \preg_replace('(from )', '', $fromRenaming);
+            $matchRenaming[\md5($row)]          = \preg_replace('(to )', '', $row);
         }
 
         return $matchRenaming;
