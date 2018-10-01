@@ -200,12 +200,33 @@ class GitAuthorExtractor implements AuthorExtractor
 
         \preg_match_all('/rename(.*?)\n/', $output, $match);
 
-        return \array_map(
-            function ($row) {
-                return \preg_replace('( to | from )', '', $row);
-            },
-            $match[1]
-        );
+        $matchRenaming = [];
+        foreach ($match[1] as $index => $row) {
+            // Put the first renaming to the match list.
+            if (2 !== \count($matchRenaming)) {
+                $matchRenaming[\md5($row)] = \preg_replace('( to | from )', '', $row);
+
+                continue;
+            }
+
+            \preg_match('( to | from )', $row, $renamingDirection);
+            if (' from ' === $renamingDirection[0]) {
+                continue;
+            }
+
+            $compareHash = \md5(' from ' . \preg_replace('( to )', '', $row));
+            // If not found in the renaiming file in the self row sequence, we are break here.
+            if (!\array_key_exists($compareHash, $matchRenaming)) {
+                break;
+            }
+
+            $fromRenaming = $match[1][($index - 1)];
+
+            $matchRenaming[\md5($fromRenaming)] = \preg_replace('( from )', '', $fromRenaming);
+            $matchRenaming[\md5($row)]          = \preg_replace('( to )', '', $row);
+        }
+
+        return $matchRenaming;
     }
 
     /**
