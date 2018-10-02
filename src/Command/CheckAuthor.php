@@ -23,14 +23,19 @@
 
 namespace PhpCodeQuality\AuthorValidation\Command;
 
+use Bit3\GitPhp\GitRepository;
+use Doctrine\Common\Cache\Cache;
+use Doctrine\Common\Cache\FilesystemCache;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -117,7 +122,13 @@ class CheckAuthor extends Command
                 'include',
                 (InputArgument::IS_ARRAY | InputArgument::OPTIONAL),
                 'The directory to start searching, must be a git repository or a sub dir in a git repository.',
-                ['.']
+                array('.')
+            )
+            ->addOption(
+                'debug',
+                null,
+                InputOption::VALUE_NONE,
+                'Enable the debug mode.'
             );
     }
 
@@ -130,9 +141,11 @@ class CheckAuthor extends Command
      *
      * @param Config          $config The configuration.
      *
+     * @param Cache           $cache The cache.
+     *
      * @return AuthorExtractor[]
      */
-    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $config)
+    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $config, Cache $cache)
     {
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = [];
@@ -143,7 +156,7 @@ class CheckAuthor extends Command
                 'php-files' => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
             ] as $option => $class) {
             if ($input->getOption($option)) {
-                $extractors[$option] = new $class($config, $output);
+                $extractors[$option] = new $class($config, $output, $cache);
             }
         }
 
@@ -219,9 +232,25 @@ class CheckAuthor extends Command
                 ))
             );
 
+        $paths = \array_values($config->getIncludedPaths());
+        $git   = new GitRepository($this->determineGitRoot($paths[0]));
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $git->getConfig()->setLogger(
+                new ConsoleLogger($output)
+            );
+        }
+
+        $cache       = new FilesystemCache('var/cache/phpcq/author-validation');
+        $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
+        if (!$cache->fetch($mainCacheId) || $input->getOption('debug')) {
+            $cache->deleteAll();
+
+            $cache->save($mainCacheId, $mainCacheId);
+        }
+
         $diff         = $input->getOption('diff');
-        $extractors   = $this->createSourceExtractors($input, $error, $config);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error);
+        $extractors   = $this->createSourceExtractors($input, $error, $config, $cache);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cache);
         $comparator   = new AuthorListComparator($config, $error);
         $comparator->shallGeneratePatches($diff);
 
@@ -240,15 +269,40 @@ class CheckAuthor extends Command
      * @param string          $scope  Git author scope.
      * @param Config          $config Author extractor config.
      * @param OutputInterface $error  Error output.
+     * @param Cache           $cache The cache.
      *
-     * @return GitAuthorExtractor|AuthorExtractor\GitProjectAuthorExtractor
+     * @return GitAuthorExtractor|GitProjectAuthorExtractor
      */
-    private function createGitAuthorExtractor($scope, Config $config, $error)
+    private function createGitAuthorExtractor($scope, Config $config, $error, $cache)
     {
         if ($scope === 'project') {
-            return new AuthorExtractor\GitProjectAuthorExtractor($config, $error);
+            return new GitProjectAuthorExtractor($config, $error, $cache);
         } else {
-            return new GitAuthorExtractor($config, $error);
+            return new GitAuthorExtractor($config, $error, $cache);
         }
+    }
+
+    /**
+     * Determine the git root, starting from arbitrary directory.
+     *
+     * @param string $path The start path.
+     *
+     * @return string The git root path.
+     *
+     * @throws \RuntimeException If the git root could not determined.
+     */
+    private function determineGitRoot($path)
+    {
+        // @codingStandardsIgnoreStart
+        while (strlen($path) > 1) {
+            // @codingStandardsIgnoreEnd
+            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+                return $path;
+            }
+
+            $path = dirname($path);
+        }
+
+        throw new \RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
     }
 }

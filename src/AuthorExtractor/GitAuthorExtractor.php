@@ -23,11 +23,9 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use Bit3\GitPhp\GitException;
 use Bit3\GitPhp\GitRepository;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Process\Process;
 
 /**
  * Extract the author information from a git repository.
@@ -106,41 +104,45 @@ class GitAuthorExtractor implements AuthorExtractor
         $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci"},';
 
         $authors = [];
-
         foreach ($fileHistory as $file) {
-            $log = \json_decode(
-                '[' .
-                \trim(
-                    // git log --format=$format --no-merges
-                    $git->log()->follow()->format($format)->noMerges()->execute($file),
-                    ','
-                )
-                . ']',
-                true
-            );
+            $cacheId = \md5('authors/file/' . $file);
+            if (!$this->cache->fetch($cacheId)) {
+                $log = \json_decode(
+                    '[' .
+                    \trim(
+                        // git log --format=$format --no-merges -- $file
+                        $git->log()->follow()->format($format)->noMerges()->execute($file),
+                        ','
+                    )
+                    . ']',
+                    true
+                );
 
-            foreach ($log as $commit) {
-                if (isset($authors[$commit['commit']])) {
-                    continue;
+                $data = [];
+                foreach ($log as $commit) {
+                    if (isset($authors[$commit['commit']])) {
+                        continue;
+                    }
+
+                    // Sadly no command in our git library for this.
+                    $arguments = [
+                        $git->getConfig()->getGitExecutablePath(),
+                        'show',
+                        $commit['commit']
+                    ];
+
+                    $output = $this->runCustomGit($arguments, $git);
+                    if (false === \strpos($output, $file)) {
+                        continue;
+                    }
+
+                    $data[$commit['commit']] = $commit;
                 }
 
-                // Sadly no command in our git library for this.
-                $arguments = [
-                    $git->getConfig()->getGitExecutablePath(),
-                    'show',
-                    $commit['commit'],
-                    '--',
-                    $file
-                ];
-
-                $output = $this->runCustomGit($arguments, $git);
-
-                if (false === \strpos($output, $file)) {
-                    continue;
-                }
-
-                $authors[$commit['commit']] = $commit;
+                $this->cache->save($cacheId, \serialize($data));
             }
+
+            $authors = \array_merge($authors, \unserialize($this->cache->fetch($cacheId)));
         }
 
         return $authors;
@@ -156,25 +158,54 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function renamingFileHistory($path, GitRepository $git)
     {
-        // Sadly no command in our git library for this.
-        $arguments = [
-            $git->getConfig()->getGitExecutablePath(),
-            'log',
-            '--follow',
-            '--diff-filter=RC',
-            '-p',
-            '--',
-            $path
-        ];
-
-        $output = $this->runCustomGit($arguments, $git) . "\n";
-
         $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
-        if (false === \strpos($output, $relativePath)) {
-            return $this->findRenamingFileByMerge($relativePath, $git);
+
+        $mergeFileList    = $this->findRenamingFileByMerge($relativePath, $git);
+        $renamingFileList = $this->filterRenamingByPathList([$relativePath], $git);
+        $copyFileList     = $this->filterCopyByPathList(
+            \array_unique(\array_merge($renamingFileList, $mergeFileList)),
+            $git
+        );
+
+        $fileList = \array_unique(
+            \array_merge([$relativePath], $renamingFileList, $mergeFileList, $copyFileList)
+        );
+
+        return $fileList;
+    }
+
+    /**
+     * Filter the git log by renaming to in each file.
+     *
+     * @param array         $pathList The path list.
+     * @param GitRepository $git      The git repository.
+     *
+     * @return array
+     */
+    private function filterRenamingByPathList(array $pathList, GitRepository $git)
+    {
+        $fileList = [];
+
+        foreach ($pathList as $path) {
+            // git log --follow -p -- $path
+            $log = $git
+                ->log()
+                ->follow()
+                ->revisionRange('-p')
+                ->execute($path);
+
+            if (false === \strpos($log, $path)) {
+                continue;
+            }
+
+            preg_match_all('/^(rename)\s+([^\n]*?)\n/m', $log, $match);
+
+            foreach ($match[2] as $row) {
+                $fileList[] = \preg_replace('(^to |^from )', '', $row);
+            }
         }
 
-        return $this->matchRenamingFromLog($output);
+        return \array_unique($fileList);
     }
 
     /**
@@ -199,7 +230,6 @@ class GitAuthorExtractor implements AuthorExtractor
             }
 
             foreach (\explode(' ', $commit['parent']) as $parentCommitId) {
-                echo $parentCommitId . ' - ' . $commit['commit'] . PHP_EOL;
                 // git diff --diff-filter=R PARENT_COMMIT_ID
                 $arguments = [
                     $git->getConfig()->getGitExecutablePath(),
@@ -209,15 +239,53 @@ class GitAuthorExtractor implements AuthorExtractor
                 ];
 
                 $output = $this->runCustomGit($arguments, $git);
-                if (!$output) {
+                if (false === \strpos($output, $relativePath)) {
                     continue;
                 }
 
-                $fileList = \array_merge($fileList, $this->matchRenamingFromLog($output, $relativePath));
+                foreach ($this->matchRenamingFromLog($output, $relativePath) as $path) {
+                    $fileList[] = $path;
+                }
             }
         }
 
         return $fileList;
+    }
+
+    /**
+     * Filter the git log by copy to in each file.
+     *
+     * @param array         $pathList The path list.
+     * @param GitRepository $git      The git repository.
+     *
+     * @return array
+     */
+    private function filterCopyByPathList(array $pathList, GitRepository $git)
+    {
+        $fileList = [];
+
+        foreach ($pathList as $path) {
+            $cacheId = \md5('log/follow/p/file/' . $path);
+            if (!$this->cache->fetch($cacheId)) {
+                // git log --follow -p -- $path
+                $data = $git
+                    ->log()
+                    ->follow()
+                    ->revisionRange('-p')
+                    ->execute($path);
+
+                $this->cache->save($cacheId, $data);
+            }
+
+            $log = $this->cache->fetch($cacheId);
+            preg_match_all('/^(copy)\s+([^\n]*?)\n/m', $log, $match);
+
+            foreach ($match[2] as $row) {
+                $fileList[] = \preg_replace('(^to |^from )', '', $row);
+            }
+        }
+
+        return \array_unique($fileList);
     }
 
     /**
@@ -259,29 +327,29 @@ class GitAuthorExtractor implements AuthorExtractor
         $matchRenaming = [];
         foreach ($match[2] as $index => $row) {
             // Put the first renaming to the match list, find the first file by the start filter.
-            if ($startFrom && (2 !== \count($matchRenaming))) {
+            if ($startFrom && (1 >= \count($matchRenaming))) {
                 if ('to ' . $startFrom === $row) {
                     $fromRenaming = $match[2][($index - 1)];
 
-                    $matchRenaming[\md5($fromRenaming)] = \preg_replace('(from )', '', $fromRenaming);
-                    $matchRenaming[\md5($row)]          = \preg_replace('(to )', '', $row);
+                    $matchRenaming[\md5($fromRenaming)] = \preg_replace('(^from )', '', $fromRenaming);
+                    $matchRenaming[\md5($row)]          = \preg_replace('(^to )', '', $row);
                 }
                 continue;
             }
 
             // Put the first renaming to the match list.
-            if (2 !== \count($matchRenaming)) {
-                $matchRenaming[\md5($row)] = \preg_replace('(to |from )', '', $row);
+            if (1 >= \count($matchRenaming)) {
+                $matchRenaming[\md5($row)] = \preg_replace('(^to |^from )', '', $row);
 
                 continue;
             }
 
-            \preg_match('(to |from )', $row, $renamingDirection);
+            \preg_match('(^to |^from )', $row, $renamingDirection);
             if ('from ' === $renamingDirection[0]) {
                 continue;
             }
 
-            $compareHash = \md5('from ' . \preg_replace('(to )', '', $row));
+            $compareHash = \md5('from ' . \preg_replace('(^to )', '', $row));
             // If not found in the renaming file list, we are continue here.
             if (!\array_key_exists($compareHash, $matchRenaming)) {
                 continue;
@@ -289,8 +357,8 @@ class GitAuthorExtractor implements AuthorExtractor
 
             $fromRenaming = $match[2][($index - 1)];
 
-            $matchRenaming[\md5($fromRenaming)] = \preg_replace('(from )', '', $fromRenaming);
-            $matchRenaming[\md5($row)]          = \preg_replace('(to )', '', $row);
+            $matchRenaming[\md5($fromRenaming)] = \preg_replace('(^from )', '', $fromRenaming);
+            $matchRenaming[\md5($row)]          = \preg_replace('(^to )', '', $row);
         }
 
         return $matchRenaming;

@@ -182,6 +182,37 @@ trait GitAuthorExtractorTrait
     }
 
     /**
+     * Run a custom git process.
+     *
+     * @param array         $arguments A list of git arguments.
+     * @param GitRepository $git       The git repository.
+     *
+     * @return string
+     *
+     * @throws GitException When the git execution failed.
+     */
+    private function runCustomGit(array $arguments, GitRepository $git)
+    {
+        $cacheId = \md5('arguments/' . \implode('/', $arguments));
+
+        if (!$this->cache->fetch($cacheId)) {
+            $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+            $git->getConfig()->getLogger()->debug(
+                \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            );
+
+            $process->run();
+            $this->cache->save($cacheId, rtrim($process->getOutput(), "\r\n"));
+
+            if (!$process->isSuccessful()) {
+                throw GitException::createFromProcess('Could not execute git command', $process);
+            }
+        }
+
+        return $this->cache->fetch($cacheId);
+    }
+
+    /**
      * Prepare the command line arguments for the symfony process.
      *
      * @param array $arguments The command line arguments for the symfony process.

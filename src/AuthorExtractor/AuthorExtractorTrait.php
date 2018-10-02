@@ -22,6 +22,7 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use Doctrine\Common\Cache\Cache;
 use PhpCodeQuality\AuthorValidation\Config;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
@@ -53,11 +54,11 @@ trait AuthorExtractorTrait
     protected $ignoredAuthors;
 
     /**
-     * The cached result of calls to extract.
+     * The cache.
      *
-     * @var array
+     * @var Cache
      */
-    protected $cachedResult = [];
+    protected $cache;
 
     /**
      * Create a new instance.
@@ -65,11 +66,14 @@ trait AuthorExtractorTrait
      * @param Config          $config The configuration this extractor shall operate with.
      *
      * @param OutputInterface $output The output interface to use for logging.
+     *
+     * @param Cache           $cache  The cache.
      */
-    public function __construct(Config $config, OutputInterface $output)
+    public function __construct(Config $config, OutputInterface $output, Cache $cache)
     {
         $this->config = $config;
         $this->output = $output;
+        $this->cache  = $cache;
     }
 
     /**
@@ -77,23 +81,24 @@ trait AuthorExtractorTrait
      */
     public function extractAuthorsFor($path)
     {
-        if (!isset($this->cachedResult[$path])) {
+        $cacheId = 'authors/' . $path . \get_class($this);
+        if (!$this->cache->fetch($cacheId)) {
             $result = $this->beautifyAuthorList($this->doExtract($path));
-            if (\is_array($result)) {
-                $authors = [];
+            if (is_array($result)) {
+                $authors = array();
                 foreach ($result as $author) {
                     $author = $this->config->getRealAuthor($author);
                     if ($author) {
-                        $authors[\strtolower($author)] = $author;
+                        $authors[strtolower($author)] = $author;
                     }
                 }
                 $result = $authors;
             }
 
-            $this->cachedResult[$path] = $result;
+            $this->cache->save($cacheId, $result);
         }
 
-        return $this->cachedResult[$path];
+        return $this->cache->fetch($cacheId);
     }
 
     /**
