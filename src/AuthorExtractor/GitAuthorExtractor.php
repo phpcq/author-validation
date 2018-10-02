@@ -98,8 +98,6 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git  The repository to extract all files from.
      *
      * @return array
-     *
-     * @throws GitException Throws an exception if the git command can not execute.
      */
     private function getAuthorListFrom($path, $git)
     {
@@ -135,19 +133,9 @@ class GitAuthorExtractor implements AuthorExtractor
                     $file
                 ];
 
-                $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
-                $git->getConfig()->getLogger()->debug(
-                    \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
-                );
+                $output = $this->runCustomGit($arguments, $git);
 
-                $process->run();
-                $output = \rtrim($process->getOutput(), "\r\n");
-
-                if (!$process->isSuccessful()) {
-                    throw GitException::createFromProcess('Could not execute git command', $process);
-                }
-
-                if (!$output) {
+                if (false === \strpos($output, $file)) {
                     continue;
                 }
 
@@ -165,8 +153,6 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git  The git repository.
      *
      * @return array
-     *
-     * @throws GitException Throws an exception if the git command can not execute.
      */
     private function renamingFileHistory($path, GitRepository $git)
     {
@@ -181,27 +167,108 @@ class GitAuthorExtractor implements AuthorExtractor
             $path
         ];
 
-        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
-        $git->getConfig()->getLogger()->debug(
-            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
-        );
-
-        $process->run();
-        $output = rtrim($process->getOutput(), "\r\n") . "\n";
+        $output = $this->runCustomGit($arguments, $git) . "\n";
 
         $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
         if (false === \strpos($output, $relativePath)) {
+            return $this->findRenamingFileByMerge($relativePath, $git);
+        }
+
+        return $this->matchRenamingFromLog($output);
+    }
+
+    /**
+     * Find renaming file by merge commit.
+     *
+     * @param string        $relativePath The relative file path.
+     * @param GitRepository $git          The git repository.
+     *
+     * @return array
+     */
+    private function findRenamingFileByMerge($relativePath, GitRepository $git)
+    {
+        $mergeCommit = $this->findMergeCommitByRelativePath($relativePath, $git);
+        if (!\count($mergeCommit)) {
             return [$relativePath];
         }
 
-        if (!$process->isSuccessful()) {
-            throw GitException::createFromProcess('Could not execute git command', $process);
+        $fileList = [];
+        foreach ($mergeCommit as $commit) {
+            if (empty($commit['parent'])) {
+                continue;
+            }
+
+            foreach (\explode(' ', $commit['parent']) as $parentCommitId) {
+                echo $parentCommitId . ' - ' . $commit['commit'] . PHP_EOL;
+                // git diff --diff-filter=R PARENT_COMMIT_ID
+                $arguments = [
+                    $git->getConfig()->getGitExecutablePath(),
+                    'diff',
+                    '--diff-filter=R',
+                    $parentCommitId
+                ];
+
+                $output = $this->runCustomGit($arguments, $git);
+                if (!$output) {
+                    continue;
+                }
+
+                $fileList = \array_merge($fileList, $this->matchRenamingFromLog($output, $relativePath));
+            }
         }
 
-        \preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $output, $match);
+        return $fileList;
+    }
+
+    /**
+     * Find merge commit by relative file path.
+     *
+     * @param string        $relativePath The relative file path.
+     * @param GitRepository $git          The git repository.
+     *
+     * @return array
+     */
+    private function findMergeCommitByRelativePath($relativePath, GitRepository $git)
+    {
+        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci", "parent": "%P"},';
+
+        return \json_decode(
+            '[' .
+            \trim(
+                // git log --format=$format --merges -- $relativePath
+                $git->log()->format($format)->merges()->execute($relativePath),
+                ','
+            )
+            . ']',
+            true
+        );
+    }
+
+    /**
+     * Match renaming file from the log.
+     *
+     * @param string $gitLog    The git log.
+     * @param string $startFrom The relative path where start the search.
+     *
+     * @return array
+     */
+    private function matchRenamingFromLog($gitLog, $startFrom = '')
+    {
+        preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $gitLog, $match);
 
         $matchRenaming = [];
         foreach ($match[2] as $index => $row) {
+            // Put the first renaming to the match list, find the first file by the start filter.
+            if ($startFrom && (2 !== \count($matchRenaming))) {
+                if ('to ' . $startFrom === $row) {
+                    $fromRenaming = $match[2][($index - 1)];
+
+                    $matchRenaming[\md5($fromRenaming)] = \preg_replace('(from )', '', $fromRenaming);
+                    $matchRenaming[\md5($row)]          = \preg_replace('(to )', '', $row);
+                }
+                continue;
+            }
+
             // Put the first renaming to the match list.
             if (2 !== \count($matchRenaming)) {
                 $matchRenaming[\md5($row)] = \preg_replace('(to |from )', '', $row);
@@ -210,12 +277,12 @@ class GitAuthorExtractor implements AuthorExtractor
             }
 
             \preg_match('(to |from )', $row, $renamingDirection);
-            if (' from ' === $renamingDirection[0]) {
+            if ('from ' === $renamingDirection[0]) {
                 continue;
             }
 
             $compareHash = \md5('from ' . \preg_replace('(to )', '', $row));
-            // If not found in the renaiming file list, we are continue here.
+            // If not found in the renaming file list, we are continue here.
             if (!\array_key_exists($compareHash, $matchRenaming)) {
                 continue;
             }
