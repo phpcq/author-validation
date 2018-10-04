@@ -231,7 +231,7 @@ class CheckAuthor extends Command
             );
         }
 
-        $cache       = new FilesystemCache('var/cache/phpcq/author-validation');
+        $cache       = new FilesystemCache(\sys_get_temp_dir(). '/cache/phpcq/author-validation');
         $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
         if (!$cache->fetch($mainCacheId) || $input->getOption('debug')) {
             $cache->deleteAll();
