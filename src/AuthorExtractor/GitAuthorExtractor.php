@@ -139,11 +139,11 @@ class GitAuthorExtractor implements AuthorExtractor
             }
 
             foreach (\unserialize($this->cache->fetch($cacheId)) as $cachedCommit) {
-                if (isset($authors[$cachedCommit['commit']])) {
+                if (isset($authors[\md5($cachedCommit['name'])])) {
                     continue;
                 }
 
-                $authors[$cachedCommit['commit']] = $cachedCommit;
+                $authors[\md5($cachedCommit['name'])] = $cachedCommit;
             }
         }
 
