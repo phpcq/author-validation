@@ -23,6 +23,7 @@
 
 namespace PhpCodeQuality\AuthorValidation;
 
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -138,9 +139,9 @@ class AuthorListComparator
         }
 
         $this->patchSet[] =
-            'diff ' . $patchFile . ' ' .$patchFile . "\n" .
+            'diff ' . $patchFile . ' ' . $patchFile . "\n" .
             '--- ' . $patchFile . "\n" .
-            '+++ ' . $patchFile . "\n"  .
+            '+++ ' . $patchFile . "\n" .
             $patch;
 
         return true;
@@ -168,18 +169,21 @@ class AuthorListComparator
 
         return $superfluous;
     }
+
     /**
      * Run comparison for a given path.
      *
-     * @param AuthorExtractor $current The author list containing the current state.
+     * @param AuthorExtractor $current     The author list containing the current state.
      *
-     * @param AuthorExtractor $should  The author list containing the desired state.
+     * @param AuthorExtractor $should      The author list containing the desired state.
      *
-     * @param string          $path    The path to compare.
+     * @param ProgressBar     $progressBar The progress bar.
+     *
+     * @param string          $path        The path to compare.
      *
      * @return bool
      */
-    private function comparePath(AuthorExtractor $current, AuthorExtractor $should, $path)
+    private function comparePath(AuthorExtractor $current, AuthorExtractor $should, ProgressBar $progressBar, $path)
     {
         $validates        = true;
         $mentionedAuthors = $current->extractAuthorsFor($path);
@@ -194,6 +198,9 @@ class AuthorListComparator
                 );
             }
 
+            $progressBar->advance(1);
+            $progressBar->setMessage('Author validation is in progress...');
+
             return true;
         }
 
@@ -203,9 +210,12 @@ class AuthorListComparator
         if (\count($superfluousMentions)) {
             $this->output->writeln(
                 \sprintf(
+                    PHP_EOL .
+                    PHP_EOL .
                     'The file <info>%s</info> is mentioning superfluous author(s):' .
                     PHP_EOL .
-                    '<comment>%s</comment>',
+                    '<comment>%s</comment>' .
+                    PHP_EOL,
                     $path,
                     \implode(PHP_EOL, $superfluousMentions)
                 )
@@ -216,9 +226,12 @@ class AuthorListComparator
         if (\count($missingMentions)) {
             $this->output->writeln(
                 \sprintf(
+                    PHP_EOL .
+                    PHP_EOL .
                     'The file <info>%s</info> is not mentioning its author(s):' .
                     PHP_EOL .
-                    '<comment>%s</comment>',
+                    '<comment>%s</comment>' .
+                    PHP_EOL,
                     $path,
                     \implode(PHP_EOL, $missingMentions)
                 )
@@ -244,6 +257,9 @@ class AuthorListComparator
             $this->patchExtractor($path, $current, $wantedAuthors);
         }
 
+        $progressBar->advance(1);
+        $progressBar->setMessage('Author validation is in progress...');
+
         return $validates;
     }
 
@@ -265,9 +281,19 @@ class AuthorListComparator
         $allPaths     = \array_intersect($shouldPaths, $currentPaths);
         $validates    = true;
 
+        $progressBar = new ProgressBar($this->output, \count($allPaths));
+        $progressBar->start();
+        $progressBar->setMessage('Start author validation.');
+
+        $progressBar->setFormat('%current%/%max% [%bar%] %message% %elapsed:6s%');
+
         foreach ($allPaths as $pathname) {
-            $validates = $this->comparePath($current, $should, $pathname) && $validates;
+            $validates = $this->comparePath($current, $should, $progressBar, $pathname) && $validates;
         }
+
+        $progressBar->setMessage('Finished author validation.');
+        $progressBar->finish();
+        $this->output->writeln(PHP_EOL);
 
         return $validates;
     }
