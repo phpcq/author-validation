@@ -214,10 +214,6 @@ class GitAuthorExtractor implements AuthorExtractor
 
                 $data = [];
                 foreach ($log as $commit) {
-                    if (isset($authors[$commit['commit']])) {
-                        continue;
-                    }
-
                     // Sadly no command in our git library for this.
                     $arguments = [
                         $git->getConfig()->getGitExecutablePath(),
@@ -236,7 +232,13 @@ class GitAuthorExtractor implements AuthorExtractor
                 $this->cache->save($cacheId, \serialize($data));
             }
 
-            $authors = \array_merge($authors, \unserialize($this->cache->fetch($cacheId)));
+            foreach (\unserialize($this->cache->fetch($cacheId)) as $cachedCommit) {
+                if (isset($authors[$cachedCommit['commit']])) {
+                    continue;
+                }
+
+                $authors[$cachedCommit['commit']] = $cachedCommit;
+            }
         }
 
         return $authors;
