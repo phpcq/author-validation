@@ -251,9 +251,12 @@ class AuthorListComparator
         if (\count($multipleAuthors)) {
             $this->output->writeln(
                 \sprintf(
+                    PHP_EOL .
+                    PHP_EOL .
                     'The file <info>%s</info> multiple author(s):' .
                     PHP_EOL .
-                    '<comment>%s</comment>',
+                    '<comment>%s</comment>'.
+                    PHP_EOL,
                     $path,
                     \implode(PHP_EOL, $multipleAuthors)
                 )
