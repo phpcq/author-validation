@@ -135,6 +135,12 @@ class CheckAuthor extends Command
                 null,
                 (InputOption::VALUE_NONE | InputArgument::OPTIONAL),
                 'The cache directory do you will use. Is this option not set, then the system temp dir used.'
+            )
+            ->addOption(
+                'no-progress-bar',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable the progress bar output.'
             );
     }
 
@@ -264,7 +270,7 @@ class CheckAuthor extends Command
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cache);
         $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cache);
-        $comparator   = new AuthorListComparator($config, $error);
+        $comparator   = new AuthorListComparator($config, $error, (bool) !$input->getOption('no-progress-bar'));
         $comparator->shallGeneratePatches($diff);
 
         $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
