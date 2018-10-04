@@ -120,6 +120,12 @@ class CheckAuthor extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Enable the debug mode.'
+            )
+            ->addOption(
+                'cache-dir',
+                null,
+                (InputOption::VALUE_NONE | InputArgument::OPTIONAL),
+                'The cache directory do you will use. Is this option not set, then the system temp dir used.'
             );
     }
 
@@ -231,7 +237,14 @@ class CheckAuthor extends Command
             );
         }
 
-        $cache       = new FilesystemCache(\sys_get_temp_dir(). '/cache/phpcq/author-validation');
+        $cacheDir = \sys_get_temp_dir();
+        if ($input->getOption('cache-dir')) {
+            $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
+        }
+        $cacheDir .= '/cache/phpcq/author-validation';
+        $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+
+        $cache       = new FilesystemCache($cacheDir . '/cache/phpcq/author-validation');
         $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
         if (!$cache->fetch($mainCacheId) || $input->getOption('debug')) {
             $cache->deleteAll();
