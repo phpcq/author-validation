@@ -60,16 +60,24 @@ class AuthorListComparator
     protected $patchSet;
 
     /**
+     * Use the progress bar.
+     *
+     * @var bool
+     */
+    protected $useProgressBar;
+
+    /**
      * Create a new instance.
      *
-     * @param Config          $config The configuration this extractor shall operate with.
-     *
-     * @param OutputInterface $output The output interface to use for logging.
+     * @param Config          $config         The configuration this extractor shall operate with.
+     * @param OutputInterface $output         The output interface to use for logging.
+     * @param bool            $useProgressBar Determine for use the progress bar.
      */
-    public function __construct(Config $config, OutputInterface $output)
+    public function __construct(Config $config, OutputInterface $output, $useProgressBar)
     {
-        $this->config = $config;
-        $this->output = $output;
+        $this->config         = $config;
+        $this->output         = $output;
+        $this->useProgressBar = $useProgressBar;
     }
 
     /**
@@ -198,9 +206,10 @@ class AuthorListComparator
                 );
             }
 
-            $progressBar->advance(1);
-            $progressBar->setMessage('Author validation is in progress...');
-
+            if ($this->useProgressBar) {
+                $progressBar->advance(1);
+                $progressBar->setMessage('Author validation is in progress...');
+            }
             return true;
         }
 
@@ -257,8 +266,10 @@ class AuthorListComparator
             $this->patchExtractor($path, $current, $wantedAuthors);
         }
 
-        $progressBar->advance(1);
-        $progressBar->setMessage('Author validation is in progress...');
+        if ($this->useProgressBar) {
+            $progressBar->advance(1);
+            $progressBar->setMessage('Author validation is in progress...');
+        }
 
         return $validates;
     }
@@ -282,18 +293,21 @@ class AuthorListComparator
         $validates    = true;
 
         $progressBar = new ProgressBar($this->output, \count($allPaths));
-        $progressBar->start();
-        $progressBar->setMessage('Start author validation.');
-
-        $progressBar->setFormat('%current%/%max% [%bar%] %message% %elapsed:6s%');
+        if ($this->useProgressBar) {
+            $progressBar->start();
+            $progressBar->setMessage('Start author validation.');
+            $progressBar->setFormat('%current%/%max% [%bar%] %message% %elapsed:6s%');
+        }
 
         foreach ($allPaths as $pathname) {
             $validates = $this->comparePath($current, $should, $progressBar, $pathname) && $validates;
         }
 
-        $progressBar->setMessage('Finished author validation.');
-        $progressBar->finish();
-        $this->output->writeln(PHP_EOL);
+        if ($this->useProgressBar) {
+            $progressBar->setMessage('Finished author validation.');
+            $progressBar->finish();
+            $this->output->writeln(PHP_EOL);
+        }
 
         return $validates;
     }
