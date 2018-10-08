@@ -110,8 +110,8 @@ class GitAuthorExtractor implements AuthorExtractor
                 $log = \json_decode(
                     '[' .
                     \trim(
-                        // git log --format=$format --no-merges -- $file
-                        $git->log()->follow()->format($format)->noMerges()->execute($file),
+                        // git log -full-history --no-merges --remove-empty --format=$format -- $file
+                        $git->log()->fullHistory()->noMerges()->removeEmpty()->format($format)->execute($file),
                         ','
                     )
                     . ']',
