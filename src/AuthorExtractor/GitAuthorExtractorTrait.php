@@ -105,7 +105,7 @@ trait GitAuthorExtractorTrait
      */
     public function getFilePaths()
     {
-        $files = array();
+        $files = [];
         foreach ($this->config->getIncludedPaths() as $path) {
             $files = array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
         }
@@ -232,6 +232,5 @@ trait GitAuthorExtractorTrait
             return $arguments;
         }
 
-        return \implode(' ', \array_map(array('Symfony\Component\Process\ProcessUtils', 'escapeArgument'), $arguments));
     }
 }

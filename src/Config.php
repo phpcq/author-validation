@@ -81,7 +81,7 @@ class Config
      *
      * @var array
      */
-    protected $metadata = array();
+    protected $metadata = [];
 
     /**
      * Create a new instance.

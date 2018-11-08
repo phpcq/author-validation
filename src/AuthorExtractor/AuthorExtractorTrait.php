@@ -83,7 +83,7 @@ trait AuthorExtractorTrait
         if (!$this->cachePool->has($cacheId)) {
             $result = $this->beautifyAuthorList($this->doExtract($path));
             if (\is_array($result)) {
-                $authors = array();
+                $authors = [];
                 foreach ($result as $author) {
                     $author = $this->config->getRealAuthor($author);
                     if ($author) {

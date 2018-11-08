@@ -123,7 +123,7 @@ class CheckAuthor extends Command
                 'include',
                 (InputArgument::IS_ARRAY | InputArgument::OPTIONAL),
                 'The directory to start searching, must be a git repository or a sub dir in a git repository.',
-                array('.')
+                ['.']
             )
             ->addOption(
                 'debug',
