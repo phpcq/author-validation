@@ -77,21 +77,21 @@ trait GitAuthorExtractorTrait
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            \sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = \rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        $files = array();
-        foreach (explode(PHP_EOL, $output) as $file) {
+        $files = [];
+        foreach (\explode(PHP_EOL, $output) as $file) {
             $absolutePath = $gitDir . '/' . $file;
             if (!$this->config->isPathExcluded($absolutePath)) {
-                $files[trim($absolutePath)] = trim($absolutePath);
+                $files[\trim($absolutePath)] = \trim($absolutePath);
             }
         }
 
@@ -102,6 +102,8 @@ trait GitAuthorExtractorTrait
      * Retrieve the file path to use in reporting.
      *
      * @return string
+     *
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     public function getFilePaths()
     {
@@ -125,16 +127,16 @@ trait GitAuthorExtractorTrait
     private function determineGitRoot($path)
     {
         // @codingStandardsIgnoreStart
-        while (strlen($path) > 1) {
+        while (\strlen($path) > 1) {
             // @codingStandardsIgnoreEnd
-            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
                 return $path;
             }
 
-            $path = dirname($path);
+            $path = \dirname($path);
         }
 
-        throw new \RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
+        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
     }
 
     /**
@@ -160,24 +162,24 @@ trait GitAuthorExtractorTrait
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = \rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
         $config = array();
-        foreach (explode(PHP_EOL, $output) as $line) {
-            list($name, $value)  = explode(' ', $line, 2);
-            $config[trim($name)] = trim($value);
+        foreach (\explode(PHP_EOL, $output) as $line) {
+            list($name, $value)   = \explode(' ', $line, 2);
+            $config[\trim($name)] = \trim($value);
         }
 
         if (isset($config['user.name']) && $config['user.email']) {
-            return sprintf('%s <%s>', $config['user.name'], $config['user.email']);
+            return \sprintf('%s <%s>', $config['user.name'], $config['user.email']);
         }
 
         return '';
@@ -193,6 +195,7 @@ trait GitAuthorExtractorTrait
      *
      * @throws GitException When the git execution failed.
      * @throws \ReflectionException Thrown if the class does not exist.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     private function runCustomGit(array $arguments, GitRepository $git)
     {
@@ -232,5 +235,6 @@ trait GitAuthorExtractorTrait
             return $arguments;
         }
 
+        return \implode(' ', \array_map(['Symfony\Component\Process\ProcessUtils', 'escapeArgument'], $arguments));
     }
 }
