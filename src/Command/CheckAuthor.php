@@ -162,10 +162,10 @@ class CheckAuthor extends Command
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = [];
         foreach ([
-                'bower'     => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
-                'composer'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
-                'packages'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
-                'php-files' => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
+                'bower'     => AuthorExtractor\BowerAuthorExtractor::class,
+                'composer'  => AuthorExtractor\ComposerAuthorExtractor::class,
+                'packages'  => AuthorExtractor\NodeAuthorExtractor::class,
+                'php-files' => AuthorExtractor\PhpDocAuthorExtractor::class,
             ] as $option => $class) {
             if ($input->getOption($option)) {
                 $extractors[$option] = new $class($config, $output, $cache);
