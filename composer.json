@@ -38,7 +38,8 @@
         "symfony/finder": "^3.4 || ^4.0",
         "symfony/process": "^2.3 || ^3.0 || ^4.0",
         "phpspec/php-diff": "^1.0",
-        "doctrine/cache": "^1.5"
+        "doctrine/cache": "^1.5",
+        "ext-json": "*",
         "ext-posix": "*"
     },
     "require-dev": {

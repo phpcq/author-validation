@@ -97,221 +97,217 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function getAuthorListFrom($path, $git)
+    private function getAuthorListFrom($path, GitRepository $git)
     {
-        $fileHistory = $this->renamingFileHistory($path, $git);
+        $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
-        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci"},';
+        $commits = $this->fetchCommits($relativePath, $git);
 
         $authors = [];
-        foreach ($fileHistory as $file) {
-            $cacheId = \md5('authors/file/' . $file);
-            if (!$this->cache->fetch($cacheId)) {
-                $log = \json_decode(
-                    '[' .
-                    \trim(
-                        // git log -full-history --no-merges --remove-empty --format=$format -- $file
-                        $git->log()->fullHistory()->noMerges()->removeEmpty()->format($format)->execute($file),
-                        ','
-                    )
-                    . ']',
-                    true
-                );
-
-                $data = [];
-                foreach ($log as $commit) {
-                    // Sadly no command in our git library for this.
-                    $arguments = [
-                        $git->getConfig()->getGitExecutablePath(),
-                        'show',
-                        $commit['commit']
-                    ];
-
-                    $output = $this->runCustomGit($arguments, $git);
-                    if (false === \strpos($output, $file)) {
-                        continue;
-                    }
-
-                    $data[$commit['commit']] = $commit;
-                }
-
-                $this->cache->save($cacheId, \serialize($data));
+        foreach ($commits as $commit) {
+            if (isset($authors[\md5($commit['name'])])) {
+                continue;
             }
 
-            foreach (\unserialize($this->cache->fetch($cacheId)) as $cachedCommit) {
-                if (isset($authors[\md5($cachedCommit['name'])])) {
-                    continue;
-                }
-
-                $authors[\md5($cachedCommit['name'])] = $cachedCommit;
-            }
+            $authors[\md5($commit['name'])] = $commit;
         }
 
         return $authors;
     }
 
     /**
-     * Retrieve the history of given search for renaming.
+     * Fetch the commits.
      *
-     * @param string        $path The file path.
-     * @param GitRepository $git  The git repository.
+     * @param string        $filePath The file path.
+     * @param GitRepository $git      The git repository.
      *
      * @return array
      */
-    private function renamingFileHistory($path, GitRepository $git)
+    private function fetchCommits($filePath, GitRepository $git)
     {
-        $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
+        $logList = $this->fetchLogByFilePath($filePath, $git);
+        if (!\count($logList)) {
+            return [];
+        }
 
-        $mergeFileList    = $this->findRenamingFileByMerge($relativePath, $git);
-        $renamingFileList = $this->filterRenamingByPathList([$relativePath], $git);
-        $copyFileList     = $this->filterCopyByPathList(
-            \array_unique(\array_merge($renamingFileList, $mergeFileList)),
-            $git
-        );
+        $commitList = $this->prepareCommitList($logList);
+        $lastCommit = $this->getLastElementOfArray($commitList);
 
-        $fileList = \array_unique(
-            \array_merge([$relativePath], $renamingFileList, $mergeFileList, $copyFileList)
-        );
+        $previousList = $this->fetchPreviousFromBlame($filePath, $lastCommit['commit'], $git);
+        if (!\count($previousList)) {
+            return $commitList;
+        }
 
-        return $fileList;
+        $commitList = \array_merge($commitList, $this->walkingPathList($previousList, $git));
+
+        return $commitList;
     }
 
     /**
-     * Filter the git log by renaming to in each file.
+     * Walking in the path list.
      *
      * @param array         $pathList The path list.
      * @param GitRepository $git      The git repository.
      *
      * @return array
      */
-    private function filterRenamingByPathList(array $pathList, GitRepository $git)
+    private function walkingPathList(array $pathList, GitRepository $git)
     {
-        $fileList = [];
+        $commitList = [];
 
         foreach ($pathList as $path) {
-            // git log --follow -p -- $path
-            $log = $git
-                ->log()
-                ->follow()
-                ->revisionRange('-p')
-                ->execute($path);
-
-            if (false === \strpos($log, $path)) {
+            $logList = $this->fetchLogByFilePath($path, $git);
+            if (!\count($logList)) {
                 continue;
             }
 
-            preg_match_all('/^(rename)\s+([^\n]*?)\n/m', $log, $match);
+            $walkingCommitList = $this->prepareCommitList($logList);
+            $commitList        = \array_merge($commitList, $walkingCommitList);
+            $lastCommit        = $this->getLastElementOfArray($walkingCommitList);
 
-            foreach ($match[2] as $row) {
-                $fileList[] = \preg_replace('(^to |^from )', '', $row);
+            $previousList = $this->fetchPreviousFromBlame($path, $lastCommit['commit'], $git);
+            if (\count($previousList)) {
+                $commitList = \array_merge($commitList, $this->walkingPathList($previousList, $git));
+            }
+
+            $copyList = $this->fetchShowCommitWithFindCopies($path, $lastCommit['commit'], $git);
+            if (\count($copyList)) {
+                $commitList = \array_merge($commitList, $this->walkingPathList($copyList, $git));
             }
         }
 
-        return \array_unique($fileList);
+        return $commitList;
     }
 
     /**
-     * Find renaming file by merge commit.
+     * Fetch the log by file path.
      *
-     * @param string        $relativePath The relative file path.
-     * @param GitRepository $git          The git repository.
-     *
-     * @return array
-     */
-    private function findRenamingFileByMerge($relativePath, GitRepository $git)
-    {
-        $mergeCommit = $this->findMergeCommitByRelativePath($relativePath, $git);
-        if (!\count($mergeCommit)) {
-            return [$relativePath];
-        }
-
-        $fileList = [];
-        foreach ($mergeCommit as $commit) {
-            if (empty($commit['parent'])) {
-                continue;
-            }
-
-            foreach (\explode(' ', $commit['parent']) as $parentCommitId) {
-                // git diff --diff-filter=R PARENT_COMMIT_ID
-                $arguments = [
-                    $git->getConfig()->getGitExecutablePath(),
-                    'diff',
-                    '--diff-filter=R',
-                    $parentCommitId
-                ];
-
-                $output = $this->runCustomGit($arguments, $git);
-                if (false === \strpos($output, $relativePath)) {
-                    continue;
-                }
-
-                foreach ($this->matchRenamingFromLog($output, $relativePath) as $path) {
-                    $fileList[] = $path;
-                }
-            }
-        }
-
-        return $fileList;
-    }
-
-    /**
-     * Filter the git log by copy to in each file.
-     *
-     * @param array         $pathList The path list.
+     * @param string        $filePath The file path.
      * @param GitRepository $git      The git repository.
      *
-     * @return array
+     * @return mixed
      */
-    private function filterCopyByPathList(array $pathList, GitRepository $git)
+    private function fetchLogByFilePath($filePath, GitRepository $git)
     {
-        $fileList = [];
+        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci", "date": "%ci"},';
 
-        foreach ($pathList as $path) {
-            $cacheId = \md5('log/follow/p/file/' . $path);
-            if (!$this->cache->fetch($cacheId)) {
-                // git log --follow -p -- $path
-                $data = $git
-                    ->log()
-                    ->follow()
-                    ->revisionRange('-p')
-                    ->execute($path);
-
-                $this->cache->save($cacheId, $data);
-            }
-
-            $log = $this->cache->fetch($cacheId);
-            preg_match_all('/^(copy)\s+([^\n]*?)\n/m', $log, $match);
-
-            foreach ($match[2] as $row) {
-                $fileList[] = \preg_replace('(^to |^from )', '', $row);
-            }
-        }
-
-        return \array_unique($fileList);
-    }
-
-    /**
-     * Find merge commit by relative file path.
-     *
-     * @param string        $relativePath The relative file path.
-     * @param GitRepository $git          The git repository.
-     *
-     * @return array
-     */
-    private function findMergeCommitByRelativePath($relativePath, GitRepository $git)
-    {
-        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci", "parent": "%P"},';
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'log',
+            '--simplify-merges',
+            '--no-merges',
+            '--format=' . $format,
+            '--',
+            $filePath
+        ];
 
         return \json_decode(
-            '[' .
-            \trim(
-                // git log --format=$format --merges -- $relativePath
-                $git->log()->format($format)->merges()->execute($relativePath),
-                ','
-            )
-            . ']',
+            \sprintf(
+                '[%s]',
+                \trim(
+                    // git log --simplify-merges --no-merges --format=$format -- $file
+                    $this->runCustomGit($arguments, $git),
+                    ','
+                )
+            ),
             true
         );
+    }
+
+    /**
+     * Fetch the previous file list from the blame.
+     *
+     * @param string        $filePath The file path.
+     * @param string        $commitId The commit identifier.
+     * @param GitRepository $git      The git respository.
+     *
+     * @return array
+     */
+    private function fetchPreviousFromBlame($filePath, $commitId, GitRepository $git)
+    {
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'blame',
+            $commitId,
+            '--incremental',
+            '--',
+            $filePath
+        ];
+
+        // git blame $commitId --incremental -- $path
+        $blame = $this->runCustomGit($arguments, $git);
+
+        \preg_match_all('/(previous) (.+) (.+)/m', $blame, $match);
+        if (!\count($match[3])) {
+            return [];
+        }
+
+        return \array_unique($match[3]);
+    }
+
+    /**
+     * Fetch a file path list from show with find copies.
+     *
+     * @param string        $filePath The file path.
+     * @param string        $commitId The commit identifier.
+     * @param GitRepository $git      The git repository.
+     *
+     * @return array
+     */
+    private function fetchShowCommitWithFindCopies($filePath, $commitId, GitRepository $git)
+    {
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'show',
+            $commitId,
+            '--find-copies'
+        ];
+
+        // git show $commitId --find-copies
+        $show = $this->runCustomGit($arguments, $git);
+
+        $renamingList = \array_unique($this->matchRenamingFromLog($show, $filePath));
+        if (\in_array($filePath, $renamingList)) {
+            $key = \array_search($filePath, $renamingList);
+            unset($renamingList[$key]);
+        }
+
+        return $renamingList;
+    }
+
+
+    /**
+     * Prepare the commit list.
+     *
+     * @param array $logList The log list.
+     *
+     * @return array
+     */
+    private function prepareCommitList(array $logList)
+    {
+        if (!\count($logList)) {
+            return [];
+        }
+
+        $commitList = [];
+        foreach ($logList as $log) {
+            $commitList[$log['commit']] = $log;
+        }
+
+        return $commitList;
+    }
+
+
+    /**
+     * Get the last element of a array.
+     *
+     * @param array $elementList The element list.
+     *
+     * @return array
+     */
+    private function getLastElementOfArray(array $elementList)
+    {
+        return \array_values(\array_slice($elementList, -1))[0];
     }
 
     /**
@@ -324,7 +320,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function matchRenamingFromLog($gitLog, $startFrom = '')
     {
-        preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $gitLog, $match);
+        \preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $gitLog, $match);
 
         $matchRenaming = [];
         foreach ($match[2] as $index => $row) {
