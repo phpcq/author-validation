@@ -20,21 +20,42 @@
  * @filesource
  */
 
-namespace PhpCodeQuality\AuthorValidation;
+namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 /**
- * Interface for an author information extractor that can patch it's input.
+ * Trait for author extraction.
  */
-interface PatchingExtractor extends AuthorExtractor
+trait PatchingAuthorExtractorTrait
 {
     /**
-     * Update author list in the storage with the given authors.
+     * Calculate the updated author map.
+     *
+     * The passed authors will be used as new reference, all existing not mentioned anymore will not be contained in
+     * the result.
      *
      * @param string $path    A path obtained via a prior call to AuthorExtractor::getFilePaths().
-     * @param string $authors The author list that shall be used in the resulting buffer (optional, if empty the buffer
-     *                        is unchanged).
+     * @param array  $authors The new author list.
      *
-     * @return string The new storage content with the updated author list.
+     * @return \string[]
      */
-    public function getBuffer($path, $authors = null);
+    protected function calculateUpdatedAuthors($path, $authors)
+    {
+        return \array_merge(\array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getFilePaths()
+    {
+        $finder = $this->buildFinder();
+        $files  = [];
+
+        /** @var \SplFileInfo[] $finder */
+        foreach ($finder as $file) {
+            $files[] = $file->getPathname();
+        }
+
+        return $files;
+    }
 }

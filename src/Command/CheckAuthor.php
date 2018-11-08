@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,8 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -22,14 +23,20 @@
 
 namespace PhpCodeQuality\AuthorValidation\Command;
 
+use Bit3\GitPhp\GitRepository;
+use Cache\Adapter\Doctrine\DoctrineCachePool;
+use Doctrine\Common\Cache\FilesystemCache;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -90,14 +97,14 @@ class CheckAuthor extends Command
                 null,
                 (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
                 'Author to ignore (format: "John Doe <j.doe@acme.org>".',
-                array()
+                []
             )
             ->addOption(
                 'exclude',
                 null,
                 (InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL),
                 'Path to exclude.',
-                array()
+                []
             )
             ->addOption(
                 'diff',
@@ -116,33 +123,54 @@ class CheckAuthor extends Command
                 'include',
                 (InputArgument::IS_ARRAY | InputArgument::OPTIONAL),
                 'The directory to start searching, must be a git repository or a sub dir in a git repository.',
-                array('.')
+                ['.']
+            )
+            ->addOption(
+                'debug',
+                null,
+                InputOption::VALUE_NONE,
+                'Enable the debug mode.'
+            )
+            ->addOption(
+                'cache-dir',
+                null,
+                (InputOption::VALUE_NONE | InputArgument::OPTIONAL),
+                'The cache directory do you will use. Is this option not set, then the system temp dir used.'
+            )
+            ->addOption(
+                'no-progress-bar',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable the progress bar output.'
             );
     }
 
     /**
      * Create all source extractors as specified on the command line.
      *
-     * @param InputInterface  $input  The input interface.
-     *
-     * @param OutputInterface $output The output interface to use for logging.
-     *
-     * @param Config          $config The configuration.
+     * @param InputInterface         $input     The input interface.
+     * @param OutputInterface        $output    The output interface to use for logging.
+     * @param Config                 $config    The configuration.
+     * @param CacheInterface         $cachePool The cache.
      *
      * @return AuthorExtractor[]
      */
-    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $config)
-    {
+    protected function createSourceExtractors(
+        InputInterface $input,
+        OutputInterface $output,
+        $config,
+        CacheInterface $cachePool
+    ) {
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
-        $extractors = array();
-        foreach (array(
-            'bower'     => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor',
-            'composer'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor',
-            'packages'  => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor',
-            'php-files' => 'PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor',
-        ) as $option => $class) {
+        $extractors = [];
+        foreach ([
+                'bower'     => AuthorExtractor\BowerAuthorExtractor::class,
+                'composer'  => AuthorExtractor\ComposerAuthorExtractor::class,
+                'packages'  => AuthorExtractor\NodeAuthorExtractor::class,
+                'php-files' => AuthorExtractor\PhpDocAuthorExtractor::class,
+            ] as $option => $class) {
             if ($input->getOption($option)) {
-                $extractors[$option] = new $class($config, $output);
+                $extractors[$option] = new $class($config, $output, $cachePool);
             }
         }
 
@@ -153,9 +181,7 @@ class CheckAuthor extends Command
      * Process the given extractors.
      *
      * @param AuthorExtractor[]    $extractors The extractors.
-     *
      * @param AuthorExtractor      $reference  The extractor to use as reference.
-     *
      * @param AuthorListComparator $comparator The comparator to use.
      *
      * @return bool
@@ -195,14 +221,14 @@ class CheckAuthor extends Command
         $config = new Config();
 
         if (!$input->getOption('do-not-ignore-well-known-bots')) {
-            $configFile = dirname(dirname(__DIR__))
+            $configFile = \dirname(\dirname(__DIR__))
                 . DIRECTORY_SEPARATOR . 'defaults'
                 . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
             $config->addFromYml($configFile);
         }
 
         $configFile = $input->getOption('config');
-        if (is_file($configFile)) {
+        if (\is_file($configFile)) {
             $config->addFromYml($configFile);
         }
 
@@ -210,18 +236,42 @@ class CheckAuthor extends Command
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
             ->includePaths(
-                array_filter(array_map(
+                \array_filter(\array_map(
                     function ($arg) {
-                        return realpath($arg);
+                        return \realpath($arg);
                     },
                     $input->getArgument('include')
                 ))
             );
 
+        $paths = \array_values($config->getIncludedPaths());
+        $git   = new GitRepository($this->determineGitRoot($paths[0]));
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $git->getConfig()->setLogger(
+                new ConsoleLogger($output)
+            );
+        }
+
+        $cacheDir = \sys_get_temp_dir();
+        if ($input->getOption('cache-dir')) {
+            $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
+        }
+        $cacheDir .= '/cache/phpcq/author-validation';
+        $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+
+        $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir . '/cache/phpcq/author-validation'));
+        $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
+        if (!$cachePool->has($mainCacheId) || $input->getOption('debug')) {
+            $cachePool->clear();
+
+            $cachePool->set($mainCacheId, $mainCacheId);
+        }
+
         $diff         = $input->getOption('diff');
-        $extractors   = $this->createSourceExtractors($input, $error, $config);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error);
-        $comparator   = new AuthorListComparator($config, $error);
+        $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool);
+        $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress-bar') && \posix_isatty(STDOUT);
+        $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
 
         $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
@@ -239,15 +289,40 @@ class CheckAuthor extends Command
      * @param string          $scope  Git author scope.
      * @param Config          $config Author extractor config.
      * @param OutputInterface $error  Error output.
+     * @param CacheInterface  $cache  The cache.
      *
-     * @return GitAuthorExtractor|AuthorExtractor\GitProjectAuthorExtractor
+     * @return GitAuthorExtractor|GitProjectAuthorExtractor
      */
-    private function createGitAuthorExtractor($scope, Config $config, $error)
+    private function createGitAuthorExtractor($scope, Config $config, $error, $cache)
     {
         if ($scope === 'project') {
-            return new AuthorExtractor\GitProjectAuthorExtractor($config, $error);
+            return new GitProjectAuthorExtractor($config, $error, $cache);
         } else {
-            return new GitAuthorExtractor($config, $error);
+            return new GitAuthorExtractor($config, $error, $cache);
         }
+    }
+
+    /**
+     * Determine the git root, starting from arbitrary directory.
+     *
+     * @param string $path The start path.
+     *
+     * @return string The git root path.
+     *
+     * @throws \RuntimeException If the git root could not determined.
+     */
+    private function determineGitRoot($path)
+    {
+        // @codingStandardsIgnoreStart
+        while (\strlen($path) > 1) {
+            // @codingStandardsIgnoreEnd
+            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+                return $path;
+            }
+
+            $path = \dirname($path);
+        }
+
+        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
     }
 }

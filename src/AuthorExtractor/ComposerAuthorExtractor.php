@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,8 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -22,17 +23,24 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+
 /**
  * Extract the author information from a composer.json file.
  */
-class ComposerAuthorExtractor extends JsonAuthorExtractor
+class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
+    use AuthorExtractorTrait;
+    use PatchingAuthorExtractorTrait;
+    use JsonAuthorExtractorTrait;
+
     /**
      * {@inheritDoc}
      */
     protected function buildFinder()
     {
-        return parent::buildFinder()->name('composer.json');
+        return $this->setupFinder()->name('composer.json');
     }
 
     /**
@@ -46,15 +54,15 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
             return null;
         }
 
-        if (!(isset($composerJson['authors']) && is_array($composerJson['authors']))) {
-            return array();
+        if (!(isset($composerJson['authors']) && \is_array($composerJson['authors']))) {
+            return [];
         }
 
         $config           = $this->config;
-        $mentionedAuthors = array_map(
+        $mentionedAuthors = \array_map(
             function ($author) use ($config) {
                 if (isset($author['email'])) {
-                    $author['name'] = sprintf(
+                    $author['name'] = \sprintf(
                         '%s <%s>',
                         $author['name'],
                         $author['email']
@@ -83,21 +91,20 @@ class ComposerAuthorExtractor extends JsonAuthorExtractor
      * Set the author information in the json.
      *
      * @param array $json    The json data.
-     *
      * @param array $authors The authors to set in the json.
      *
      * @return array The updated json array.
      */
     protected function setAuthors($json, $authors)
     {
-        $json['authors'] = array();
+        $json['authors'] = [];
         foreach ($authors as $author) {
-            list($name, $email) = explode(' <', $author);
+            list($name, $email) = \explode(' <', $author);
 
-            $config = array(
-                'name'     => trim($name),
-                'email'    => trim(substr($email, 0, -1))
-            );
+            $config = [
+                'name'     => \trim($name),
+                'email'    => \trim(\substr($email, 0, -1))
+            ];
 
             if ($this->config->hasMetadata($author, 'homepage')) {
                 $config['homepage'] = $this->config->getMetadata($author, 'homepage');

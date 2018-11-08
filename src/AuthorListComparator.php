@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,8 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -22,6 +23,7 @@
 
 namespace PhpCodeQuality\AuthorValidation;
 
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -58,16 +60,24 @@ class AuthorListComparator
     protected $patchSet;
 
     /**
+     * Use the progress bar.
+     *
+     * @var bool
+     */
+    protected $useProgressBar;
+
+    /**
      * Create a new instance.
      *
-     * @param Config          $config The configuration this extractor shall operate with.
-     *
-     * @param OutputInterface $output The output interface to use for logging.
+     * @param Config          $config         The configuration this extractor shall operate with.
+     * @param OutputInterface $output         The output interface to use for logging.
+     * @param bool            $useProgressBar Determine for use the progress bar.
      */
-    public function __construct(Config $config, OutputInterface $output)
+    public function __construct(Config $config, OutputInterface $output, $useProgressBar)
     {
-        $this->config = $config;
-        $this->output = $output;
+        $this->config         = $config;
+        $this->output         = $output;
+        $this->useProgressBar = $useProgressBar;
     }
 
     /**
@@ -100,9 +110,7 @@ class AuthorListComparator
      * Handle the patching cycle for a extractor.
      *
      * @param string          $path          The path to patch.
-     *
      * @param AuthorExtractor $extractor     The extractor to patch.
-     *
      * @param array           $wantedAuthors The authors that shall be contained in the result.
      *
      * @return bool True if the patch has been collected, false otherwise.
@@ -113,8 +121,8 @@ class AuthorListComparator
             return false;
         }
 
-        $original = explode("\n", $extractor->getBuffer($path));
-        $new      = explode("\n", $extractor->getBuffer($path, $wantedAuthors));
+        $original = \explode("\n", $extractor->getBuffer($path));
+        $new      = \explode("\n", $extractor->getBuffer($path, $wantedAuthors));
         $diff     = new \Diff($original, $new);
         $patch    = $diff->render($this->diff);
 
@@ -125,21 +133,21 @@ class AuthorListComparator
         $patchFile = $path;
 
         foreach ($this->config->getIncludedPaths() as $prefix) {
-            $prefixLength = strlen($prefix);
-            if (substr($path, 0, $prefixLength) === $prefix) {
-                $patchFile = substr($path, $prefixLength);
+            $prefixLength = \strlen($prefix);
+            if (\substr($path, 0, $prefixLength) === $prefix) {
+                $patchFile = \substr($path, $prefixLength);
 
                 if ($patchFile[0] == '/') {
-                    $patchFile = substr($patchFile, 1);
+                    $patchFile = \substr($patchFile, 1);
                 }
                 break;
             }
         }
 
         $this->patchSet[] =
-            'diff ' . $patchFile . ' ' .$patchFile . "\n" .
+            'diff ' . $patchFile . ' ' . $patchFile . "\n" .
             '--- ' . $patchFile . "\n" .
-            '+++ ' . $patchFile . "\n"  .
+            '+++ ' . $patchFile . "\n" .
             $patch;
 
         return true;
@@ -149,17 +157,15 @@ class AuthorListComparator
      * Determine the superfluous authors from the passed arrays.
      *
      * @param array  $mentionedAuthors The author list containing the current state.
-     *
      * @param array  $wantedAuthors    The author list containing the desired state.
-     *
      * @param string $path             The path to relate to.
      *
      * @return array
      */
     private function determineSuperfluous($mentionedAuthors, $wantedAuthors, $path)
     {
-        $superfluous = array();
-        foreach (array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
+        $superfluous = [];
+        foreach (\array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
             if (!$this->config->isCopyLeftAuthor($author, $path)) {
                 $superfluous[$key] = $author;
             }
@@ -167,65 +173,98 @@ class AuthorListComparator
 
         return $superfluous;
     }
+
     /**
      * Run comparison for a given path.
      *
-     * @param AuthorExtractor $current The author list containing the current state.
-     *
-     * @param AuthorExtractor $should  The author list containing the desired state.
-     *
-     * @param string          $path    The path to compare.
+     * @param AuthorExtractor $current     The author list containing the current state.
+     * @param AuthorExtractor $should      The author list containing the desired state.
+     * @param ProgressBar     $progressBar The progress bar.
+     * @param string          $path        The path to compare.
      *
      * @return bool
      */
-    private function comparePath(AuthorExtractor $current, AuthorExtractor $should, $path)
+    private function comparePath(AuthorExtractor $current, AuthorExtractor $should, ProgressBar $progressBar, $path)
     {
         $validates        = true;
         $mentionedAuthors = $current->extractAuthorsFor($path);
+        $multipleAuthors  = $current->extractMultipleAuthorsFor($path);
         $wantedAuthors    = $should->extractAuthorsFor($path);
 
         // If current input is not valid, return.
         if ($mentionedAuthors === null) {
             if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $this->output->writeln(
-                    sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
+                    \sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
                 );
             }
 
+            if ($this->useProgressBar) {
+                $progressBar->advance(1);
+                $progressBar->setMessage('Author validation is in progress...');
+            }
             return true;
         }
 
         $superfluousMentions = $this->determineSuperfluous($mentionedAuthors, $wantedAuthors, $path);
-        $missingMentions     = array_diff_key($wantedAuthors, $mentionedAuthors);
+        $missingMentions     = \array_diff_key($wantedAuthors, $mentionedAuthors);
 
-        if (count($superfluousMentions)) {
+        if (\count($superfluousMentions)) {
             $this->output->writeln(
-                sprintf(
+                \sprintf(
+                    PHP_EOL .
+                    PHP_EOL .
                     'The file <info>%s</info> is mentioning superfluous author(s):' .
                     PHP_EOL .
-                    '<comment>%s</comment>',
+                    '<comment>%s</comment>' .
+                    PHP_EOL,
                     $path,
-                    implode(PHP_EOL, $superfluousMentions)
+                    \implode(PHP_EOL, $superfluousMentions)
                 )
             );
             $validates = false;
         }
 
-        if (count($missingMentions)) {
+        if (\count($missingMentions)) {
             $this->output->writeln(
-                sprintf(
+                \sprintf(
+                    PHP_EOL .
+                    PHP_EOL .
                     'The file <info>%s</info> is not mentioning its author(s):' .
                     PHP_EOL .
-                    '<comment>%s</comment>',
+                    '<comment>%s</comment>' .
+                    PHP_EOL,
                     $path,
-                    implode(PHP_EOL, $missingMentions)
+                    \implode(PHP_EOL, $missingMentions)
                 )
             );
+            $validates = false;
+        }
+
+        if (\count($multipleAuthors)) {
+            $this->output->writeln(
+                \sprintf(
+                    PHP_EOL .
+                    PHP_EOL .
+                    'The file <info>%s</info> multiple author(s):' .
+                    PHP_EOL .
+                    '<comment>%s</comment>'.
+                    PHP_EOL,
+                    $path,
+                    \implode(PHP_EOL, $multipleAuthors)
+                )
+            );
+
             $validates = false;
         }
 
         if (!$validates) {
             $this->patchExtractor($path, $current, $wantedAuthors);
+        }
+
+        if ($this->useProgressBar) {
+            $progressBar->advance(1);
+            $progressBar->setMessage('Author validation is in progress...');
         }
 
         return $validates;
@@ -237,7 +276,6 @@ class AuthorListComparator
      * This method adds messages to the output if any problems are encountered.
      *
      * @param AuthorExtractor $current The author list containing the current state.
-     *
      * @param AuthorExtractor $should  The author list containing the desired state.
      *
      * @return bool
@@ -246,11 +284,24 @@ class AuthorListComparator
     {
         $shouldPaths  = $should->getFilePaths();
         $currentPaths = $current->getFilePaths();
-        $allPaths     = array_intersect($shouldPaths, $currentPaths);
+        $allPaths     = \array_intersect($shouldPaths, $currentPaths);
         $validates    = true;
 
+        $progressBar = new ProgressBar($this->output, \count($allPaths));
+        if ($this->useProgressBar) {
+            $progressBar->start();
+            $progressBar->setMessage('Start author validation.');
+            $progressBar->setFormat('%current%/%max% [%bar%] %message% %elapsed:6s%');
+        }
+
         foreach ($allPaths as $pathname) {
-            $validates = $this->comparePath($current, $should, $pathname) && $validates;
+            $validates = $this->comparePath($current, $should, $progressBar, $pathname) && $validates;
+        }
+
+        if ($this->useProgressBar) {
+            $progressBar->setMessage('Finished author validation.');
+            $progressBar->finish();
+            $this->output->writeln(PHP_EOL);
         }
 
         return $validates;

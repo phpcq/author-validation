@@ -23,16 +23,18 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use Bit3\GitPhp\GitException;
 use Bit3\GitPhp\GitRepository;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Process\Process;
 
 /**
  * Extract the author information from a git repository.
  */
-class GitAuthorExtractor extends AbstractGitAuthorExtractor
+class GitAuthorExtractor implements AuthorExtractor
 {
+    use AuthorExtractorTrait;
+    use GitAuthorExtractorTrait;
+
     /**
      * Optional attached finder for processing multiple files.
      *
@@ -50,7 +52,7 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
     private function convertAuthorList(array $authors)
     {
         if (!$authors) {
-            return array();
+            return [];
         }
 
         return \array_map(
@@ -65,19 +67,18 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      * Check if the current file path is a file and if so, if it has staged modifications.
      *
      * @param string        $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
-     *
      * @param GitRepository $git  The repository to extract all files from.
      *
      * @return bool
      */
     private function isDirtyFile($path, $git)
     {
-        if (!is_file($path)) {
+        if (!\is_file($path)) {
             return false;
         }
 
         $status  = $git->status()->short()->getIndexStatus();
-        $relPath = substr($path, (strlen($git->getRepositoryPath()) + 1));
+        $relPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -90,118 +91,288 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      * Retrieve the author list from the given path via calling git.
      *
      * @param string        $path The path to check.
-     *
      * @param GitRepository $git  The repository to extract all files from.
      *
      * @return array
      *
-     * @throws GitException Throws an exception if the git command can not execute.
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
-    private function getAuthorListFrom($path, $git)
+    private function getAuthorListFrom($path, GitRepository $git)
     {
-        $fileHistory = $this->renamingFileHistory($path, $git);
+        $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
-        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci"},';
+        $commits = $this->fetchCommits($relativePath, $git);
 
         $authors = [];
-
-        foreach ($fileHistory as $file) {
-            $log = \json_decode(
-                '[' .
-                \trim(
-                    // git log --format=$format --no-merges
-                    $git->log()->follow()->format($format)->noMerges()->execute($file),
-                    ','
-                )
-                . ']',
-                true
-            );
-
-            foreach ($log as $commit) {
-                if (isset($authors[$commit['commit']])) {
-                    continue;
-                }
-
-                // Sadly no command in our git library for this.
-                $arguments = [
-                    $git->getConfig()->getGitExecutablePath(),
-                    'show',
-                    $commit['commit'],
-                    '--',
-                    $file
-                ];
-
-                $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
-                $git->getConfig()->getLogger()->debug(
-                    sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
-                );
-
-                $process->run();
-                $output = rtrim($process->getOutput(), "\r\n");
-
-                if (!$process->isSuccessful()) {
-                    throw GitException::createFromProcess('Could not execute git command', $process);
-                }
-
-                if (!$output) {
-                    continue;
-                }
-
-                $authors[$commit['commit']] = $commit;
+        foreach ($commits as $commit) {
+            if (isset($authors[\md5($commit['name'])])) {
+                continue;
             }
+
+            $authors[\md5($commit['name'])] = $commit;
         }
 
         return $authors;
     }
 
     /**
-     * Retrieve the history of given search for renaming.
+     * Fetch the commits.
      *
-     * @param string        $path The file path.
-     * @param GitRepository $git  The git repository.
+     * @param string        $filePath The file path.
+     * @param GitRepository $git      The git repository.
      *
      * @return array
      *
-     * @throws GitException Throws an exception if the git command can not execute.
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
-    private function renamingFileHistory($path, GitRepository $git)
+    private function fetchCommits($filePath, GitRepository $git)
     {
-        // Sadly no command in our git library for this.
+        $logList = $this->fetchLogByFilePath($filePath, $git);
+        if (!\count($logList)) {
+            return [];
+        }
+
+        $commitList = $this->prepareCommitList($logList);
+        $lastCommit = $this->getLastElementOfArray($commitList);
+
+        $previousList = $this->fetchPreviousFromBlame($filePath, $lastCommit['commit'], $git);
+        if (!\count($previousList)) {
+            return $commitList;
+        }
+
+        $commitList = \array_merge($commitList, $this->walkingPathList($previousList, $git));
+
+        return $commitList;
+    }
+
+    /**
+     * Walking in the path list.
+     *
+     * @param array         $pathList The path list.
+     * @param GitRepository $git      The git repository.
+     *
+     * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
+     */
+    private function walkingPathList(array $pathList, GitRepository $git)
+    {
+        $commitList = [];
+
+        foreach ($pathList as $path) {
+            $logList = $this->fetchLogByFilePath($path, $git);
+            if (!\count($logList)) {
+                continue;
+            }
+
+            $walkingCommitList = $this->prepareCommitList($logList);
+            $commitList        = \array_merge($commitList, $walkingCommitList);
+            $lastCommit        = $this->getLastElementOfArray($walkingCommitList);
+
+            $previousList = $this->fetchPreviousFromBlame($path, $lastCommit['commit'], $git);
+            if (\count($previousList)) {
+                $commitList = \array_merge($commitList, $this->walkingPathList($previousList, $git));
+            }
+
+            $copyList = $this->fetchShowCommitWithFindCopies($path, $lastCommit['commit'], $git);
+            if (\count($copyList)) {
+                $commitList = \array_merge($commitList, $this->walkingPathList($copyList, $git));
+            }
+        }
+
+        return $commitList;
+    }
+
+    /**
+     * Fetch the log by file path.
+     *
+     * @param string        $filePath The file path.
+     * @param GitRepository $git      The git repository.
+     *
+     * @return mixed
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     */
+    private function fetchLogByFilePath($filePath, GitRepository $git)
+    {
+        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci", "date": "%ci"},';
+
         $arguments = [
             $git->getConfig()->getGitExecutablePath(),
             'log',
-            '--follow',
-            '--diff-filter=R',
-            '-p',
+            '--simplify-merges',
+            '--no-merges',
+            '--format=' . $format,
             '--',
-            $path
+            $filePath
         ];
 
-        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
-        $git->getConfig()->getLogger()->debug(
-            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+        return \json_decode(
+            \sprintf(
+                '[%s]',
+                \trim(
+                    // git log --simplify-merges --no-merges --format=$format -- $file
+                    $this->runCustomGit($arguments, $git),
+                    ','
+                )
+            ),
+            true
         );
+    }
 
-        $process->run();
-        $output = rtrim($process->getOutput(), "\r\n") . "\n";
+    /**
+     * Fetch the previous file list from the blame.
+     *
+     * @param string        $filePath The file path.
+     * @param string        $commitId The commit identifier.
+     * @param GitRepository $git      The git respository.
+     *
+     * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     */
+    private function fetchPreviousFromBlame($filePath, $commitId, GitRepository $git)
+    {
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'blame',
+            $commitId,
+            '--incremental',
+            '--',
+            $filePath
+        ];
 
-        $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
-        if (false === \strpos($output, $relativePath)) {
-            return [$relativePath];
+        // git blame $commitId --incremental -- $path
+        $blame = $this->runCustomGit($arguments, $git);
+
+        \preg_match_all('/(previous) (.+) (.+)/m', $blame, $match);
+        if (!\count($match[3])) {
+            return [];
         }
 
-        if (!$process->isSuccessful()) {
-            throw GitException::createFromProcess('Could not execute git command', $process);
+        return \array_unique($match[3]);
+    }
+
+    /**
+     * Fetch a file path list from show with find copies.
+     *
+     * @param string        $filePath The file path.
+     * @param string        $commitId The commit identifier.
+     * @param GitRepository $git      The git repository.
+     *
+     * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     */
+    private function fetchShowCommitWithFindCopies($filePath, $commitId, GitRepository $git)
+    {
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'show',
+            $commitId,
+            '--find-copies'
+        ];
+
+        // git show $commitId --find-copies
+        $show = $this->runCustomGit($arguments, $git);
+
+        $renamingList = \array_unique($this->matchRenamingFromLog($show, $filePath));
+        if (\in_array($filePath, $renamingList)) {
+            $key = \array_search($filePath, $renamingList);
+            unset($renamingList[$key]);
         }
 
-        preg_match_all('/rename(.*?)\n/', $output, $match);
+        return $renamingList;
+    }
 
-        return \array_map(
-            function ($row) {
-                return \preg_replace('( to | from )', '', $row);
-            },
-            $match[1]
-        );
+
+    /**
+     * Prepare the commit list.
+     *
+     * @param array $logList The log list.
+     *
+     * @return array
+     */
+    private function prepareCommitList(array $logList)
+    {
+        if (!\count($logList)) {
+            return [];
+        }
+
+        $commitList = [];
+        foreach ($logList as $log) {
+            $commitList[$log['commit']] = $log;
+        }
+
+        return $commitList;
+    }
+
+
+    /**
+     * Get the last element of a array.
+     *
+     * @param array $elementList The element list.
+     *
+     * @return array
+     */
+    private function getLastElementOfArray(array $elementList)
+    {
+        return \array_values(\array_slice($elementList, -1))[0];
+    }
+
+    /**
+     * Match renaming file from the log.
+     *
+     * @param string $gitLog    The git log.
+     * @param string $startFrom The relative path where start the search.
+     *
+     * @return array
+     */
+    private function matchRenamingFromLog($gitLog, $startFrom = '')
+    {
+        \preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $gitLog, $match);
+
+        $matchRenaming = [];
+        foreach ($match[2] as $index => $row) {
+            // Put the first renaming to the match list, find the first file by the start filter.
+            if ($startFrom && (1 >= \count($matchRenaming))) {
+                if ('to ' . $startFrom === $row) {
+                    $fromRenaming = $match[2][($index - 1)];
+
+                    $matchRenaming[\md5($fromRenaming)] = \preg_replace('(^from )', '', $fromRenaming);
+                    $matchRenaming[\md5($row)]          = \preg_replace('(^to )', '', $row);
+                }
+                continue;
+            }
+
+            // Put the first renaming to the match list.
+            if (1 >= \count($matchRenaming)) {
+                $matchRenaming[\md5($row)] = \preg_replace('(^to |^from )', '', $row);
+
+                continue;
+            }
+
+            \preg_match('(^to |^from )', $row, $renamingDirection);
+            if ('from ' === $renamingDirection[0]) {
+                continue;
+            }
+
+            $compareHash = \md5('from ' . \preg_replace('(^to )', '', $row));
+            // If not found in the renaming file list, we are continue here.
+            if (!\array_key_exists($compareHash, $matchRenaming)) {
+                continue;
+            }
+
+            $fromRenaming = $match[2][($index - 1)];
+
+            $matchRenaming[\md5($fromRenaming)] = \preg_replace('(^from )', '', $fromRenaming);
+            $matchRenaming[\md5($row)]          = \preg_replace('(^to )', '', $row);
+        }
+
+        return $matchRenaming;
     }
 
     /**
@@ -210,6 +381,9 @@ class GitAuthorExtractor extends AbstractGitAuthorExtractor
      * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]|null
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     protected function doExtract($path)
     {

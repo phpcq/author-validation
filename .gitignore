@@ -12,7 +12,9 @@ Thumbs.db
 nbproject/
 
 # composer related
+composer.lock
 vendor/
 
 # Transifex
 /.tx/
+var

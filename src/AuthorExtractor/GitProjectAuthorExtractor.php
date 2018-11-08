@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -22,13 +23,17 @@
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitRepository;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Finder\Finder;
 
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
  */
-class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
+class GitProjectAuthorExtractor implements AuthorExtractor
 {
+    use AuthorExtractorTrait;
+    use GitAuthorExtractorTrait;
+
     /**
      * Optional attached finder for processing multiple files.
      *
@@ -39,7 +44,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
     /**
      * Convert the git binary output to a valid author list.
      *
-     * @param string[] $authors The author list to convert.
+     * @param string $authors The author list to convert.
      *
      * @return string[]
      */
@@ -50,11 +55,11 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
         }
 
         // remove commit sumary of author list
-        return array_map(
+        return \array_map(
             function ($author) {
-                return preg_replace('~\s*([0-9]+)\s+(.*)~', '$2', $author);
+                return \preg_replace('~\s*([0-9]+)\s+(.*)~', '$2', $author);
             },
-            preg_split('~[\r\n]+~', $authors)
+            \preg_split('~[\r\n]+~', $authors)
         );
     }
 
@@ -81,7 +86,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
      *
      * @param GitRepository $git The repository to extract all files from.
      *
-     * @return string[]
+     * @return string
      */
     private function getAuthorListFrom($git)
     {
@@ -94,6 +99,8 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
      * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]|null
+     *
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function doExtract($path)
     {
@@ -101,7 +108,7 @@ class GitProjectAuthorExtractor extends AbstractGitAuthorExtractor
 
         $authors = $this->convertAuthorList($this->getAuthorListFrom($git));
 
-        // Check if repository has uncomitted changes, so that someone is currently working on it.
+        // Check if repository has uncommitted changes, so that someone is currently working on it.
         if ($this->hasUncommittedChanges($git)) {
             $authors[] = $this->getCurrentUserInfo($git);
         }

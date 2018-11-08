@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -21,17 +22,24 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+
 /**
  * Extract the author information from a bower.json file.
  */
-class BowerAuthorExtractor extends JsonAuthorExtractor
+class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
+    use AuthorExtractorTrait;
+    use PatchingAuthorExtractorTrait;
+    use JsonAuthorExtractorTrait;
+
     /**
      * {@inheritDoc}
      */
     protected function buildFinder()
     {
-        return parent::buildFinder()->name('bower.json');
+        return $this->setupFinder()->name('bower.json');
     }
 
     /**
@@ -45,18 +53,18 @@ class BowerAuthorExtractor extends JsonAuthorExtractor
             return null;
         }
 
-        if (isset($bowerJson['authors']) && is_array($bowerJson['authors'])) {
-            return array();
+        if (isset($bowerJson['authors']) && \is_array($bowerJson['authors'])) {
+            return [];
         }
 
-        $mentionedAuthors = array_map(
+        $mentionedAuthors = \array_map(
             function ($author) {
-                if (is_string($author)) {
+                if (\is_string($author)) {
                     return $author;
                 }
 
                 if (isset($author['email'])) {
-                    return sprintf(
+                    return \sprintf(
                         '%s <%s>',
                         $author['name'],
                         $author['email']
@@ -75,14 +83,13 @@ class BowerAuthorExtractor extends JsonAuthorExtractor
      * Set the author information in the json.
      *
      * @param array $json    The json data.
-     *
      * @param array $authors The authors to set in the json.
      *
      * @return array The updated json array.
      */
     protected function setAuthors($json, $authors)
     {
-        $json['authors'] = array();
+        $json['authors'] = [];
         foreach ($authors as $author) {
             $json['authors'][] = $author;
         }

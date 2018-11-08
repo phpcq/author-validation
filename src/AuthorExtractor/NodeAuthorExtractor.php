@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -21,17 +22,24 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+
 /**
  * Extract the author information from a nodeJs packages.json file.
  */
-class NodeAuthorExtractor extends JsonAuthorExtractor
+class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
+    use AuthorExtractorTrait;
+    use PatchingAuthorExtractorTrait;
+    use JsonAuthorExtractorTrait;
+
     /**
      * {@inheritDoc}
      */
     protected function buildFinder()
     {
-        return parent::buildFinder()->name('packages.json');
+        return $this->setupFinder()->name('packages.json');
     }
 
     /**
@@ -45,11 +53,11 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
             return null;
         }
 
-        $mentionedAuthors = array();
+        $mentionedAuthors = [];
 
         if (isset($packagesJson['author'])) {
             if (isset($packagesJson['author']['email'])) {
-                $mentionedAuthors[] = sprintf(
+                $mentionedAuthors[] = \sprintf(
                     '%s <%s>',
                     $packagesJson['author']['name'],
                     $packagesJson['author']['email']
@@ -62,7 +70,7 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
         if (isset($packagesJson['contributors'])) {
             foreach ($packagesJson['contributors'] as $contributor) {
                 if (isset($contributor['email'])) {
-                    $mentionedAuthors[] = sprintf(
+                    $mentionedAuthors[] = \sprintf(
                         '%s <%s>',
                         $contributor['name'],
                         $contributor['email']
@@ -80,7 +88,6 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
      * Set the author information in the json.
      *
      * @param array $json    The json data.
-     *
      * @param array $authors The authors to set in the json.
      *
      * @return array The updated json array.
@@ -89,7 +96,7 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
     {
         // If no author set yet, use the first one as author.
         if (!isset($json['author'])) {
-            $json['author'] = array_shift($authors);
+            $json['author'] = \array_shift($authors);
         }
         $maintainer = $this->convertAuthor($json['author']);
 
@@ -116,10 +123,10 @@ class NodeAuthorExtractor extends JsonAuthorExtractor
      */
     private function convertAuthor($author)
     {
-        list($name, $email) = explode(' <', $author);
-        return array(
-            'name'     => trim($name),
-            'email'    => trim(substr($email, 0, -1)),
-        );
+        list($name, $email) = \explode(' <', $author);
+        return [
+            'name'     => \trim($name),
+            'email'    => \trim(\substr($email, 0, -1)),
+        ];
     }
 }

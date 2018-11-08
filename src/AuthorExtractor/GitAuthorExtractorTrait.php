@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,8 +12,10 @@
  *
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -26,12 +28,11 @@ use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\ProcessBuilder;
 
 /**
- * Base class for author extraction from a git repository.
+ * Base trait for author extraction from a git repository.
  */
-abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
+trait GitAuthorExtractorTrait
 {
     /**
      * Create a git repository instance.
@@ -60,39 +61,39 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
      * @return string[]
      *
      * @throws GitException When the git execution failed.
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     private function getAllFilesFromGit($git)
     {
         $gitDir = $git->getRepositoryPath();
         // Sadly no command in our git library for this.
-        $processBuilder = new ProcessBuilder();
-        $processBuilder->setWorkingDirectory($gitDir);
-        $processBuilder
-            ->add($git->getConfig()->getGitExecutablePath())
-            ->add('ls-tree')
-            ->add('HEAD')
-            ->add('-r')
-            ->add('--full-name')
-            ->add('--name-only');
+        $arguments = [
+            $git->getConfig()->getGitExecutablePath(),
+            'ls-tree',
+            'HEAD',
+            '-r',
+            '--full-name',
+            '--name-only'
+        ];
 
-        $process = $processBuilder->getProcess();
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            \sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = \rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        $files = array();
-        foreach (explode(PHP_EOL, $output) as $file) {
+        $files = [];
+        foreach (\explode(PHP_EOL, $output) as $file) {
             $absolutePath = $gitDir . '/' . $file;
             if (!$this->config->isPathExcluded($absolutePath)) {
-                $files[trim($absolutePath)] = trim($absolutePath);
+                $files[\trim($absolutePath)] = \trim($absolutePath);
             }
         }
 
@@ -103,10 +104,12 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
      * Retrieve the file path to use in reporting.
      *
      * @return string
+     *
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     public function getFilePaths()
     {
-        $files = array();
+        $files = [];
         foreach ($this->config->getIncludedPaths() as $path) {
             $files = array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
         }
@@ -126,16 +129,16 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
     private function determineGitRoot($path)
     {
         // @codingStandardsIgnoreStart
-        while (strlen($path) > 1) {
+        while (\strlen($path) > 1) {
             // @codingStandardsIgnoreEnd
-            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
                 return $path;
             }
 
-            $path = dirname($path);
+            $path = \dirname($path);
         }
 
-        throw new \RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
+        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
     }
 
     /**
@@ -146,6 +149,7 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
      * @return string
      *
      * @throws GitException When the git execution failed.
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function getCurrentUserInfo($git)
     {
@@ -160,27 +164,60 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = rtrim($process->getOutput(), "\r\n");
+        $output = \rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
         $config = array();
-        foreach (explode(PHP_EOL, $output) as $line) {
-            list($name, $value)  = explode(' ', $line, 2);
-            $config[trim($name)] = trim($value);
+        foreach (\explode(PHP_EOL, $output) as $line) {
+            list($name, $value)   = \explode(' ', $line, 2);
+            $config[\trim($name)] = \trim($value);
         }
 
         if (isset($config['user.name']) && $config['user.email']) {
-            return sprintf('%s <%s>', $config['user.name'], $config['user.email']);
+            return \sprintf('%s <%s>', $config['user.name'], $config['user.email']);
         }
 
         return '';
+    }
+
+    /**
+     * Run a custom git process.
+     *
+     * @param array         $arguments A list of git arguments.
+     * @param GitRepository $git       The git repository.
+     *
+     * @return string
+     *
+     * @throws GitException When the git execution failed.
+     * @throws \ReflectionException Thrown if the class does not exist.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
+     */
+    private function runCustomGit(array $arguments, GitRepository $git)
+    {
+        $cacheId = \md5('arguments/' . \implode('/', $arguments));
+
+        if (!$this->cachePool->has($cacheId)) {
+            $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+            $git->getConfig()->getLogger()->debug(
+                \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            );
+
+            $process->run();
+            $this->cachePool->set($cacheId, rtrim($process->getOutput(), "\r\n"));
+
+            if (!$process->isSuccessful()) {
+                throw GitException::createFromProcess('Could not execute git command', $process);
+            }
+        }
+
+        return $this->cachePool->get($cacheId);
     }
 
     /**
@@ -189,6 +226,8 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
      * @param array $arguments The command line arguments for the symfony process.
      *
      * @return array|string
+     *
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function prepareProcessArguments(array $arguments)
     {
@@ -198,6 +237,6 @@ abstract class AbstractGitAuthorExtractor extends AbstractAuthorExtractor
             return $arguments;
         }
 
-        return \implode(' ', \array_map(array('Symfony\Component\Process\ProcessUtils', 'escapeArgument'), $arguments));
+        return \implode(' ', \array_map(['Symfony\Component\Process\ProcessUtils', 'escapeArgument'], $arguments));
     }
 }
