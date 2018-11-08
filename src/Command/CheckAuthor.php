@@ -270,7 +270,8 @@ class CheckAuthor extends Command
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cache);
         $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cache);
-        $comparator   = new AuthorListComparator($config, $error, (bool) !$input->getOption('no-progress-bar'));
+        $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress-bar') && \posix_isatty(STDOUT);
+        $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
 
         $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);

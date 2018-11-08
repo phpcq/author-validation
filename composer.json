@@ -39,6 +39,7 @@
         "symfony/process": "^2.3 || ^3.0 || ^4.0",
         "phpspec/php-diff": "^1.0",
         "doctrine/cache": "^1.5"
+        "ext-posix": "*"
     },
     "require-dev": {
         "phpcq/all-tasks": "^1.2"
