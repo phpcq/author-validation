@@ -26,6 +26,7 @@ namespace PhpCodeQuality\AuthorValidation\Test\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\Config;
 use PHPUnit\Framework\TestCase;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -38,7 +39,7 @@ class PhpDocAuthorExtractorTest extends TestCase
      */
     public function testSetAuthors()
     {
-        $cache     = $this->getMockBuilder('\Doctrine\Common\Cache\Cache')->getMock();
+        $cache     = $this->getMockBuilder(CacheInterface::class)->getMock();
         $output    = new BufferedOutput();
         $extractor = new PhpDocAuthorExtractor(new Config(), $output, $cache);
         $this->markTestIncomplete('Unimplemented so far.');

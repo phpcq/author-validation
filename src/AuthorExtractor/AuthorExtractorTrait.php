@@ -22,8 +22,8 @@
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use Doctrine\Common\Cache\Cache;
 use PhpCodeQuality\AuthorValidation\Config;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -56,23 +56,22 @@ trait AuthorExtractorTrait
     /**
      * The cache.
      *
-     * @var Cache
+     * @var CacheInterface
      */
-    protected $cache;
+    protected $cachePool;
 
     /**
      * Create a new instance.
      *
      * @param Config          $config The configuration this extractor shall operate with.
      * @param OutputInterface $output The output interface to use for logging.
-     *
-     * @param Cache           $cache  The cache.
+     * @param CacheInterface           $cachePool  The cachePool.
      */
-    public function __construct(Config $config, OutputInterface $output, Cache $cache)
+    public function __construct(Config $config, OutputInterface $output, CacheInterface $cachePool)
     {
-        $this->config = $config;
-        $this->output = $output;
-        $this->cache  = $cache;
+        $this->config    = $config;
+        $this->output    = $output;
+        $this->cachePool = $cachePool;
     }
 
     /**
@@ -80,8 +79,8 @@ trait AuthorExtractorTrait
      */
     public function extractAuthorsFor($path)
     {
-        $cacheId = 'authors/' . $path . \get_class($this);
-        if (!$this->cache->fetch($cacheId)) {
+        $cacheId = \md5('authors/' . $path . \get_class($this));
+        if (!$this->cachePool->has($cacheId)) {
             $result = $this->beautifyAuthorList($this->doExtract($path));
             if (\is_array($result)) {
                 $authors = array();
@@ -94,10 +93,10 @@ trait AuthorExtractorTrait
                 $result = $authors;
             }
 
-            $this->cache->save($cacheId, $result);
+            $this->cachePool->set($cacheId, $result);
         }
 
-        return $this->cache->fetch($cacheId);
+        return $this->cachePool->get($cacheId);
     }
 
     /**

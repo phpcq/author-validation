@@ -198,21 +198,21 @@ trait GitAuthorExtractorTrait
     {
         $cacheId = \md5('arguments/' . \implode('/', $arguments));
 
-        if (!$this->cache->fetch($cacheId)) {
+        if (!$this->cachePool->has($cacheId)) {
             $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
             $git->getConfig()->getLogger()->debug(
                 \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
             );
 
             $process->run();
-            $this->cache->save($cacheId, rtrim($process->getOutput(), "\r\n"));
+            $this->cachePool->set($cacheId, rtrim($process->getOutput(), "\r\n"));
 
             if (!$process->isSuccessful()) {
                 throw GitException::createFromProcess('Could not execute git command', $process);
             }
         }
 
-        return $this->cache->fetch($cacheId);
+        return $this->cachePool->get($cacheId);
     }
 
     /**

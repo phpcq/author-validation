@@ -96,6 +96,7 @@ class GitAuthorExtractor implements AuthorExtractor
      * @return array
      *
      * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     private function getAuthorListFrom($path, GitRepository $git)
     {
@@ -124,6 +125,7 @@ class GitAuthorExtractor implements AuthorExtractor
      * @return array
      *
      * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     private function fetchCommits($filePath, GitRepository $git)
     {
@@ -154,6 +156,7 @@ class GitAuthorExtractor implements AuthorExtractor
      * @return array
      *
      * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     private function walkingPathList(array $pathList, GitRepository $git)
     {
@@ -190,6 +193,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git      The git repository.
      *
      * @return mixed
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     private function fetchLogByFilePath($filePath, GitRepository $git)
     {
@@ -226,6 +231,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git      The git respository.
      *
      * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     private function fetchPreviousFromBlame($filePath, $commitId, GitRepository $git)
     {
@@ -257,6 +264,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git      The git repository.
      *
      * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     private function fetchShowCommitWithFindCopies($filePath, $commitId, GitRepository $git)
     {
@@ -374,6 +383,7 @@ class GitAuthorExtractor implements AuthorExtractor
      * @return string[]|null
      *
      * @throws \ReflectionException Which is not available on your PHP installation.
+     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     protected function doExtract($path)
     {

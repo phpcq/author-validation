@@ -24,13 +24,14 @@
 namespace PhpCodeQuality\AuthorValidation\Command;
 
 use Bit3\GitPhp\GitRepository;
-use Doctrine\Common\Cache\Cache;
+use Cache\Adapter\Doctrine\DoctrineCachePool;
 use Doctrine\Common\Cache\FilesystemCache;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -147,15 +148,19 @@ class CheckAuthor extends Command
     /**
      * Create all source extractors as specified on the command line.
      *
-     * @param InputInterface  $input  The input interface.
-     * @param OutputInterface $output The output interface to use for logging.
-     * @param Config          $config The configuration.
-     * @param Cache           $cache The cache.
+     * @param InputInterface         $input     The input interface.
+     * @param OutputInterface        $output    The output interface to use for logging.
+     * @param Config                 $config    The configuration.
+     * @param CacheInterface         $cachePool The cache.
      *
      * @return AuthorExtractor[]
      */
-    protected function createSourceExtractors(InputInterface $input, OutputInterface $output, $config, Cache $cache)
-    {
+    protected function createSourceExtractors(
+        InputInterface $input,
+        OutputInterface $output,
+        $config,
+        CacheInterface $cachePool
+    ) {
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = [];
         foreach ([
@@ -165,7 +170,7 @@ class CheckAuthor extends Command
                 'php-files' => AuthorExtractor\PhpDocAuthorExtractor::class,
             ] as $option => $class) {
             if ($input->getOption($option)) {
-                $extractors[$option] = new $class($config, $output, $cache);
+                $extractors[$option] = new $class($config, $output, $cachePool);
             }
         }
 
@@ -254,17 +259,17 @@ class CheckAuthor extends Command
         $cacheDir .= '/cache/phpcq/author-validation';
         $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
 
-        $cache       = new FilesystemCache($cacheDir . '/cache/phpcq/author-validation');
+        $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir . '/cache/phpcq/author-validation'));
         $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
-        if (!$cache->fetch($mainCacheId) || $input->getOption('debug')) {
-            $cache->deleteAll();
+        if (!$cachePool->has($mainCacheId) || $input->getOption('debug')) {
+            $cachePool->clear();
 
-            $cache->save($mainCacheId, $mainCacheId);
+            $cachePool->set($mainCacheId, $mainCacheId);
         }
 
         $diff         = $input->getOption('diff');
-        $extractors   = $this->createSourceExtractors($input, $error, $config, $cache);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cache);
+        $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool);
         $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress-bar') && \posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
