@@ -148,11 +148,8 @@ class CheckAuthor extends Command
      * Create all source extractors as specified on the command line.
      *
      * @param InputInterface  $input  The input interface.
-     *
      * @param OutputInterface $output The output interface to use for logging.
-     *
      * @param Config          $config The configuration.
-     *
      * @param Cache           $cache The cache.
      *
      * @return AuthorExtractor[]
@@ -179,9 +176,7 @@ class CheckAuthor extends Command
      * Process the given extractors.
      *
      * @param AuthorExtractor[]    $extractors The extractors.
-     *
      * @param AuthorExtractor      $reference  The extractor to use as reference.
-     *
      * @param AuthorListComparator $comparator The comparator to use.
      *
      * @return bool
@@ -289,7 +284,7 @@ class CheckAuthor extends Command
      * @param string          $scope  Git author scope.
      * @param Config          $config Author extractor config.
      * @param OutputInterface $error  Error output.
-     * @param Cache           $cache The cache.
+     * @param CacheInterface  $cache  The cache.
      *
      * @return GitAuthorExtractor|GitProjectAuthorExtractor
      */

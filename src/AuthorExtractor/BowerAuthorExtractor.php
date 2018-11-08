@@ -83,7 +83,6 @@ class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
      * Set the author information in the json.
      *
      * @param array $json    The json data.
-     *
      * @param array $authors The authors to set in the json.
      *
      * @return array The updated json array.

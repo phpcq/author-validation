@@ -110,9 +110,7 @@ class AuthorListComparator
      * Handle the patching cycle for a extractor.
      *
      * @param string          $path          The path to patch.
-     *
      * @param AuthorExtractor $extractor     The extractor to patch.
-     *
      * @param array           $wantedAuthors The authors that shall be contained in the result.
      *
      * @return bool True if the patch has been collected, false otherwise.
@@ -159,9 +157,7 @@ class AuthorListComparator
      * Determine the superfluous authors from the passed arrays.
      *
      * @param array  $mentionedAuthors The author list containing the current state.
-     *
      * @param array  $wantedAuthors    The author list containing the desired state.
-     *
      * @param string $path             The path to relate to.
      *
      * @return array
@@ -182,11 +178,8 @@ class AuthorListComparator
      * Run comparison for a given path.
      *
      * @param AuthorExtractor $current     The author list containing the current state.
-     *
      * @param AuthorExtractor $should      The author list containing the desired state.
-     *
      * @param ProgressBar     $progressBar The progress bar.
-     *
      * @param string          $path        The path to compare.
      *
      * @return bool
@@ -283,7 +276,6 @@ class AuthorListComparator
      * This method adds messages to the output if any problems are encountered.
      *
      * @param AuthorExtractor $current The author list containing the current state.
-     *
      * @param AuthorExtractor $should  The author list containing the desired state.
      *
      * @return bool

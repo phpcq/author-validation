@@ -94,9 +94,8 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * Set the author information in doc block.
      *
-     * @param array $docBlock The doc block.
-     *
-     * @param array $authors  The authors to set in the doc block.
+     * @param string $docBlock The doc block.
+     * @param array  $authors  The authors to set in the doc block.
      *
      * @return string The updated doc block.
      */
@@ -147,7 +146,6 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      * Search the author in "line" in the passed array and return the index of the match or false if none matches.
      *
      * @param string   $line    The author to search for.
-     *
      * @param string[] $authors The author list to search in.
      *
      * @return false|int

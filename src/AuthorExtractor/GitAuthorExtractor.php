@@ -67,7 +67,6 @@ class GitAuthorExtractor implements AuthorExtractor
      * Check if the current file path is a file and if so, if it has staged modifications.
      *
      * @param string        $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
-     *
      * @param GitRepository $git  The repository to extract all files from.
      *
      * @return bool
@@ -92,10 +91,11 @@ class GitAuthorExtractor implements AuthorExtractor
      * Retrieve the author list from the given path via calling git.
      *
      * @param string        $path The path to check.
-     *
      * @param GitRepository $git  The repository to extract all files from.
      *
      * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     private function getAuthorListFrom($path, GitRepository $git)
     {
@@ -122,6 +122,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git      The git repository.
      *
      * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     private function fetchCommits($filePath, GitRepository $git)
     {
@@ -150,6 +152,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param GitRepository $git      The git repository.
      *
      * @return array
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     private function walkingPathList(array $pathList, GitRepository $git)
     {
@@ -368,6 +372,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]|null
+     *
+     * @throws \ReflectionException Which is not available on your PHP installation.
      */
     protected function doExtract($path)
     {

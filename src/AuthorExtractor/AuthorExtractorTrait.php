@@ -64,7 +64,6 @@ trait AuthorExtractorTrait
      * Create a new instance.
      *
      * @param Config          $config The configuration this extractor shall operate with.
-     *
      * @param OutputInterface $output The output interface to use for logging.
      *
      * @param Cache           $cache  The cache.

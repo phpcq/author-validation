@@ -59,6 +59,7 @@ trait GitAuthorExtractorTrait
      * @return string[]
      *
      * @throws GitException When the git execution failed.
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     private function getAllFilesFromGit($git)
     {
@@ -144,6 +145,7 @@ trait GitAuthorExtractorTrait
      * @return string
      *
      * @throws GitException When the git execution failed.
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function getCurrentUserInfo($git)
     {
@@ -190,6 +192,7 @@ trait GitAuthorExtractorTrait
      * @return string
      *
      * @throws GitException When the git execution failed.
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     private function runCustomGit(array $arguments, GitRepository $git)
     {
@@ -218,6 +221,8 @@ trait GitAuthorExtractorTrait
      * @param array $arguments The command line arguments for the symfony process.
      *
      * @return array|string
+     *
+     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function prepareProcessArguments(array $arguments)
     {

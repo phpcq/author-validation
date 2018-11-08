@@ -111,7 +111,6 @@ class Config
      * Match the passed path name against the pattern.
      *
      * @param string $pathName The path name to match.
-     *
      * @param string $pattern  The pattern.
      *
      * @return bool True if the pattern matches, false otherwise.
@@ -133,7 +132,6 @@ class Config
      * Match the passed path name against the pattern list.
      *
      * @param string $pathName    The path name to match.
-     *
      * @param array  $patternList The pattern list.
      *
      * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
@@ -197,7 +195,6 @@ class Config
      * Add an author alias.
      *
      * @param string $alias      The alias for the author.
-     *
      * @param string $realAuthor The real author to be used.
      *
      * @return Config
@@ -275,7 +272,7 @@ class Config
     /**
      * Ignore the given author.
      *
-     * @param array $author The author to ignore.
+     * @param string $author The author to ignore.
      *
      * @return Config
      */
@@ -318,7 +315,6 @@ class Config
      * Add the the given authors to the copy-left list using the given pattern.
      *
      * @param string       $author  The author to add.
-     *
      * @param string|array $pattern The pattern to add to the author.
      *
      * @return Config
@@ -358,7 +354,6 @@ class Config
      * Check if an author is listed as copy-left contributor.
      *
      * @param string $author   The author to check.
-     *
      * @param string $pathName The path to check.
      *
      * @return bool
@@ -376,7 +371,7 @@ class Config
     /**
      * Add path to the include list.
      *
-     * @param array $path The path to include.
+     * @param string $path The path to include.
      *
      * @return Config
      */
@@ -428,7 +423,7 @@ class Config
     /**
      * Add path to the exclude list.
      *
-     * @param array $path The path to exclude.
+     * @param string $path The path to exclude.
      *
      * @return Config
      */

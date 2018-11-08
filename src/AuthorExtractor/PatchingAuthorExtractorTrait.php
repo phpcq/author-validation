@@ -34,8 +34,7 @@ trait PatchingAuthorExtractorTrait
      * the result.
      *
      * @param string $path    A path obtained via a prior call to AuthorExtractor::getFilePaths().
-     *
-     * @param string $authors The new author list.
+     * @param array  $authors The new author list.
      *
      * @return \string[]
      */
