@@ -84,12 +84,12 @@ trait AuthorExtractorTrait
         $cacheId = 'authors/' . $path . \get_class($this);
         if (!$this->cache->fetch($cacheId)) {
             $result = $this->beautifyAuthorList($this->doExtract($path));
-            if (is_array($result)) {
+            if (\is_array($result)) {
                 $authors = array();
                 foreach ($result as $author) {
                     $author = $this->config->getRealAuthor($author);
                     if ($author) {
-                        $authors[strtolower($author)] = $author;
+                        $authors[\strtolower($author)] = $author;
                     }
                 }
                 $result = $authors;

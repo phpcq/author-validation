@@ -314,15 +314,15 @@ class CheckAuthor extends Command
     private function determineGitRoot($path)
     {
         // @codingStandardsIgnoreStart
-        while (strlen($path) > 1) {
+        while (\strlen($path) > 1) {
             // @codingStandardsIgnoreEnd
-            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
                 return $path;
             }
 
-            $path = dirname($path);
+            $path = \dirname($path);
         }
 
-        throw new \RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
+        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
     }
 }
