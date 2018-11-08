@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,8 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -22,78 +23,16 @@
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
-use PhpCodeQuality\AuthorValidation\Json\JsonFormatter;
+use PhpCodeQuality\AuthorValidation\PatchingExtractor;
 
 /**
  * Abstract class for author extraction.
+ *
+ * @deprecated This class is deprecated since 1.2 and where removed in 2.0.
+ *             Use the trait AuthorExtractorTrait and JsonAuthorExtractorTrait.
  */
-abstract class JsonAuthorExtractor extends AbstractPatchingAuthorExtractor
+abstract class JsonAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
-    /**
-     * Read the .json file and return it as array.
-     *
-     * @param string $path A path obtained via a prior call to JsonAuthorExtractor::getFilePaths().
-     *
-     * @return array
-     */
-    protected function loadFile($path)
-    {
-        $composerJson = $this->fileData($path);
-
-        return (null === $composerJson) ? null : (array) json_decode($composerJson, true);
-    }
-
-    /**
-     * Encode the json file and return it as string.
-     *
-     * @param array $json The json data.
-     *
-     * @return string
-     */
-    protected function encodeData($json)
-    {
-        return JsonFormatter::format($json);
-    }
-
-    /**
-     * Set the author information in the json.
-     *
-     * @param array $json    The json data.
-     *
-     * @param array $authors The authors to set in the json.
-     *
-     * @return array The updated json array.
-     */
-    abstract protected function setAuthors($json, $authors);
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getBuffer($path, $authors = null)
-    {
-        if (null === $authors) {
-            return $this->fileData($path);
-        }
-
-        $json = $this->loadFile($path);
-        $json = $this->setAuthors($json, $this->calculateUpdatedAuthors($path, $authors));
-
-        return $this->encodeData($json);
-    }
-
-    /**
-     * Load the file and return its contents.
-     *
-     * @param string $path Path to the json file.
-     *
-     * @return string|null
-     */
-    private function fileData($path)
-    {
-        if (!is_file($path)) {
-            return null;
-        }
-
-        return file_get_contents($path);
-    }
+    use AuthorExtractorTrait;
+    use JsonAuthorExtractorTrait;
 }

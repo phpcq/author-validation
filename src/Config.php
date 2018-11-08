@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014 Christian Schiffler, Tristan Lins
+ * (c) 2014-2018 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,7 +13,9 @@
  * @package    phpcq/author-validation
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
- * @copyright  2014-2016 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @author     David Molineus <david.molineus@netzmacht.de>
+ * @author     Sven Baumann <baumann.sv@gmail.com>
+ * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -38,14 +40,14 @@ class Config
      *
      * @var array
      */
-    protected $mapping = array();
+    protected $mapping = [];
 
     /**
      * List of authors to be ignored.
      *
      * @var array
      */
-    protected $ignoredAuthors = array();
+    protected $ignoredAuthors = [];
 
     /**
      * List of copy-left authors.
@@ -55,21 +57,31 @@ class Config
      *
      * @var array
      */
-    protected $copyLeft = array();
+    protected $copyLeft = [];
 
     /**
      * List of paths to include.
      *
      * @var array
      */
-    protected $include = array();
+    protected $include = [];
 
     /**
      * List of paths to exclude.
      *
      * @var array
      */
-    protected $exclude = array();
+    protected $exclude = [];
+
+    /**
+     * Author metadata.
+     *
+     * Format
+     *   Author: [ 'name' => 'value', .. ]
+     *
+     * @var array
+     */
+    protected $metadata = [];
 
     /**
      * Create a new instance.
@@ -92,14 +104,13 @@ class Config
      */
     private function arrayKey($author)
     {
-        return strtolower(trim($author));
+        return \strtolower(\trim($author));
     }
 
     /**
      * Match the passed path name against the pattern.
      *
      * @param string $pathName The path name to match.
-     *
      * @param string $pattern  The pattern.
      *
      * @return bool True if the pattern matches, false otherwise.
@@ -110,7 +121,7 @@ class Config
             $pattern = '**/' . $pattern;
         }
 
-        if (fnmatch($pattern, $pathName)) {
+        if (\fnmatch($pattern, $pathName)) {
             return true;
         }
 
@@ -121,7 +132,6 @@ class Config
      * Match the passed path name against the pattern list.
      *
      * @param string $pathName    The path name to match.
-     *
      * @param array  $patternList The pattern list.
      *
      * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
@@ -148,11 +158,11 @@ class Config
      */
     public function addFromYml($fileName)
     {
-        if (!is_readable($fileName)) {
+        if (!\is_readable($fileName)) {
             throw new \InvalidArgumentException('Could not read config file: ' . $fileName);
         }
 
-        $config = Yaml::parse(file_get_contents($fileName));
+        $config = Yaml::parse(\file_get_contents($fileName));
 
         if (isset($config['mapping'])) {
             $this->addAuthorMap($config['mapping']);
@@ -174,6 +184,10 @@ class Config
             $this->excludePaths($config['exclude']);
         }
 
+        if (isset($config['metadata'])) {
+            $this->addAuthorsMetadata($config['metadata']);
+        }
+
         return $this;
     }
 
@@ -181,7 +195,6 @@ class Config
      * Add an author alias.
      *
      * @param string $alias      The alias for the author.
-     *
      * @param string $realAuthor The real author to be used.
      *
      * @return Config
@@ -208,7 +221,7 @@ class Config
     public function addAuthorMap($mapping)
     {
         foreach ($mapping as $author => $aliases) {
-            if (is_array($aliases)) {
+            if (\is_array($aliases)) {
                 foreach ($aliases as $alias) {
                     $this->aliasAuthor($alias, $author);
                 }
@@ -259,13 +272,13 @@ class Config
     /**
      * Ignore the given author.
      *
-     * @param array $author The author to ignore.
+     * @param string $author The author to ignore.
      *
      * @return Config
      */
     public function ignoreAuthor($author)
     {
-        $this->ignoredAuthors[$this->arrayKey($author)] = trim($author);
+        $this->ignoredAuthors[$this->arrayKey($author)] = \trim($author);
 
         return $this;
     }
@@ -302,14 +315,13 @@ class Config
      * Add the the given authors to the copy-left list using the given pattern.
      *
      * @param string       $author  The author to add.
-     *
      * @param string|array $pattern The pattern to add to the author.
      *
      * @return Config
      */
     public function addCopyLeft($author, $pattern)
     {
-        if (is_array($pattern)) {
+        if (\is_array($pattern)) {
             foreach ($pattern as $singlePattern) {
                 $this->addCopyLeft($author, $singlePattern);
             }
@@ -342,7 +354,6 @@ class Config
      * Check if an author is listed as copy-left contributor.
      *
      * @param string $author   The author to check.
-     *
      * @param string $pathName The path to check.
      *
      * @return bool
@@ -360,7 +371,7 @@ class Config
     /**
      * Add path to the include list.
      *
-     * @param array $path The path to include.
+     * @param string $path The path to include.
      *
      * @return Config
      */
@@ -406,13 +417,13 @@ class Config
      */
     public function getIncludedPaths()
     {
-        return array_values($this->include);
+        return \array_values($this->include);
     }
 
     /**
      * Add path to the exclude list.
      *
-     * @param array $path The path to exclude.
+     * @param string $path The path to exclude.
      *
      * @return Config
      */
@@ -458,6 +469,77 @@ class Config
      */
     public function getExcludedPaths()
     {
-        return array_values($this->exclude);
+        return \array_values($this->exclude);
+    }
+
+    /**
+     * Add authors metadata.
+     *
+     * Format:
+     *   Author: [ name => value, ..]
+     *
+     * @param array $metadata Authors metadata.
+     *
+     * @return Config
+     */
+    public function addAuthorsMetadata($metadata)
+    {
+        foreach ($metadata as $author => $data) {
+            foreach ($data as $name => $value) {
+                $this->setMetadata($author, $name, $value);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if a specific author metadata is defined.
+     *
+     * @param string $author The author.
+     * @param string $name   Metadata name.
+     *
+     * @return bool
+     */
+    public function hasMetadata($author, $name)
+    {
+        return isset($this->metadata[$this->arrayKey($author)][$name]);
+    }
+
+    /**
+     * Get a specific meta data for an author.
+     *
+     * It returns null if it is not set.
+     *
+     * @param string $author The author.
+     * @param string $name   Metadata name.
+     *
+     * @return mixed
+     */
+    public function getMetadata($author, $name)
+    {
+        $author = $this->arrayKey($author);
+
+        if (isset($this->metadata[$author][$name])) {
+            return $this->metadata[$author][$name];
+        }
+
+        return null;
+    }
+
+    /**
+     * Set a specific meta data for an author.
+     *
+     * @param string $author The author.
+     * @param string $name   Metadata name.
+     * @param mixed  $value  Metadata value.
+     *
+     * @return Config
+     */
+    public function setMetadata($author, $name, $value)
+    {
+        $this->metadata[$this->arrayKey($author)][$name] = $value;
+
+        return $this;
     }
 }
