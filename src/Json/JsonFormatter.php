@@ -47,10 +47,6 @@ class JsonFormatter
      * @param array $data The data to encode.
      *
      * @return string
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public static function format($data)
     {
