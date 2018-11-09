@@ -252,11 +252,13 @@ class CheckAuthor extends Command
             );
         }
 
-        $cacheDir = \sys_get_temp_dir();
+        $cacheDir = rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
+            ? getenv('HOMEDRIVE') . getenv('HOMEPATH')
+            : getenv('HOME'))) ? $tmpDir : sys_get_temp_dir()), '\\/');
         if ($input->getOption('cache-dir')) {
             $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
         }
-        $cacheDir .= '/cache/phpcq/author-validation';
+        $cacheDir .= '/.cache/phpcq-author-validation';
         $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
 
         $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir));
