@@ -259,7 +259,7 @@ class CheckAuthor extends Command
         $cacheDir .= '/cache/phpcq/author-validation';
         $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
 
-        $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir . '/cache/phpcq/author-validation'));
+        $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir));
         $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
         if (!$cachePool->has($mainCacheId) || $input->getOption('debug')) {
             $cachePool->clear();
