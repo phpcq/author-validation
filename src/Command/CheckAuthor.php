@@ -259,7 +259,10 @@ class CheckAuthor extends Command
             $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
         }
         $cacheDir .= '/.cache/phpcq-author-validation';
-        $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+
+        if ($output->isVerbose()) {
+            $error->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+        }
 
         $cachePool = new DoctrineCachePool(new FilesystemCache($cacheDir));
         $cachePool->set('cacheDir', $cacheDir);
