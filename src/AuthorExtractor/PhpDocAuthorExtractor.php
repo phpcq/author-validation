@@ -139,7 +139,9 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             }
         }
 
-        return \implode("\n", \array_filter($lines));
+        return \implode("\n", \array_filter($lines, function ($value) {
+            return null !== $value;
+        }));
     }
 
     /**
