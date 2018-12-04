@@ -35,13 +35,76 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class PhpDocAuthorExtractorTest extends TestCase
 {
     /**
-     * Test the setAuthors() method.
+     * Test.
      */
-    public function testSetAuthors()
+    public function testRemovesDuplicateAuthors()
     {
-        $cache     = $this->getMockBuilder(CacheInterface::class)->getMock();
+        $cache     = $this->getMockBuilder(CacheInterface::class)->getMockForAbstractClass();
         $output    = new BufferedOutput();
         $extractor = new PhpDocAuthorExtractor(new Config(), $output, $cache);
-        $this->markTestIncomplete('Unimplemented so far.');
+
+        $result = $extractor->getBuffer(
+            __DIR__ . '/Fixtures/phpdoc-duplicate-authors.php',
+            [
+                'Author1 <author1@example.com>' => 'Author1 <author1@example.com>',
+                'Author2 <author2@example.com>' => 'Author2 <author2@example.com>',
+                'Author3 <author3@example.com>' => 'Author3 <author3@example.com>',
+            ]
+        );
+
+        $this->assertStringEqualsFile(
+            __DIR__ . '/Fixtures/phpdoc-authors1-3.php',
+            $result
+        );
+    }
+
+    /**
+     * Test.
+     */
+    public function testOverwritesAuthors()
+    {
+        $cache     = $this->getMockBuilder(CacheInterface::class)->getMockForAbstractClass();
+        $output    = new BufferedOutput();
+        $extractor = new PhpDocAuthorExtractor(new Config(), $output, $cache);
+
+        $result = $extractor->getBuffer(
+            __DIR__ . '/Fixtures/phpdoc-authors1-3.php',
+            [
+                'Author4 <author4@example.com>' => 'Author4 <author4@example.com>',
+                'Author5 <author5@example.com>' => 'Author5 <author5@example.com>',
+            ]
+        );
+
+        $this->assertStringEqualsFile(
+            __DIR__ . '/Fixtures/phpdoc-authors4-5.php',
+            $result
+        );
+    }
+
+    /**
+     * Test.
+     */
+    public function testAddsAuthors()
+    {
+        $cache     = $this->getMockBuilder(CacheInterface::class)->getMockForAbstractClass();
+        $output    = new BufferedOutput();
+        $extractor = new PhpDocAuthorExtractor(new Config(), $output, $cache);
+
+        $result = $extractor->getBuffer(
+            __DIR__ . '/Fixtures/phpdoc-authors1-3.php',
+            [
+                'Author1 <author1@example.com>' => 'Author1 <author1@example.com>',
+                'Author2 <author2@example.com>' => 'Author2 <author2@example.com>',
+                'Author3 <author3@example.com>' => 'Author3 <author3@example.com>',
+                'Author4 <author4@example.com>' => 'Author4 <author4@example.com>',
+                'Author5 <author5@example.com>' => 'Author5 <author5@example.com>',
+                'Author6 <author6@example.com>' => 'Author6 <author6@example.com>',
+            ]
+        );
+
+        $this->assertStringEqualsFile(
+            __DIR__ . '/Fixtures/phpdoc-authors1-6.php',
+            $result
+        );
     }
 }

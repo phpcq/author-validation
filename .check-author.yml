@@ -12,3 +12,6 @@ copy-left:
   Tristan Lins <tristan@lins.io>:
     - GitAuthorExtractorTrait.php
     - PatchingAuthorExtractorTrait.php
+
+exclude:
+  - tests/AuthorExtractor/Fixtures
