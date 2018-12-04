@@ -197,27 +197,22 @@ trait GitAuthorExtractorTrait
      *
      * @throws GitException When the git execution failed.
      * @throws \ReflectionException Thrown if the class does not exist.
-     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     private function runCustomGit(array $arguments, GitRepository $git)
     {
-        $cacheId = \md5('arguments/' . \implode('/', $arguments));
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+        $git->getConfig()->getLogger()->debug(
+            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+        );
 
-        if (!$this->cachePool->has($cacheId)) {
-            $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
-            $git->getConfig()->getLogger()->debug(
-                \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
-            );
+        $process->run();
+        $result = rtrim($process->getOutput(), "\r\n");
 
-            $process->run();
-            $this->cachePool->set($cacheId, rtrim($process->getOutput(), "\r\n"));
-
-            if (!$process->isSuccessful()) {
-                throw GitException::createFromProcess('Could not execute git command', $process);
-            }
+        if (!$process->isSuccessful()) {
+            throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        return $this->cachePool->get($cacheId);
+        return $result;
     }
 
     /**
