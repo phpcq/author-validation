@@ -42,7 +42,8 @@
         "doctrine/cache": "^1.5",
         "cache/doctrine-adapter": "^1.0",
         "ext-json": "*",
-        "ext-posix": "*"
+        "ext-posix": "*",
+        "sebastian/phpcpd": "^3.0 || ^4.0"
     },
     "require-dev": {
         "phpcq/all-tasks": "^1.2"

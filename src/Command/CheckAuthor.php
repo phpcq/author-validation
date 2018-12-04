@@ -261,17 +261,12 @@ class CheckAuthor extends Command
         $cacheDir .= '/.cache/phpcq-author-validation';
         $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
 
-        $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir));
-        $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
-        if (!$cachePool->has($mainCacheId) || $input->getOption('debug')) {
-            $cachePool->clear();
-
-            $cachePool->set($mainCacheId, $mainCacheId);
-        }
+        $cachePool = new DoctrineCachePool(new FilesystemCache($cacheDir));
+        $cachePool->set('cacheDir', $cacheDir);
 
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool, $git);
         $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress-bar') && \posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
@@ -292,15 +287,20 @@ class CheckAuthor extends Command
      * @param Config          $config Author extractor config.
      * @param OutputInterface $error  Error output.
      * @param CacheInterface  $cache  The cache.
+     * @param GitRepository   $git    The git repository.
      *
      * @return GitAuthorExtractor|GitProjectAuthorExtractor
      */
-    private function createGitAuthorExtractor($scope, Config $config, $error, $cache)
+    private function createGitAuthorExtractor($scope, Config $config, $error, $cache, GitRepository $git)
     {
         if ($scope === 'project') {
             return new GitProjectAuthorExtractor($config, $error, $cache);
         } else {
-            return new GitAuthorExtractor($config, $error, $cache);
+            $extractor = new GitAuthorExtractor($config, $error, $cache);
+
+            $extractor->collectFilesWithCommits($git);
+
+            return $extractor;
         }
     }
 
