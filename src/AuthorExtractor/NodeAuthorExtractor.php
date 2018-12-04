@@ -68,7 +68,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
         }
 
         if (isset($packagesJson['contributors'])) {
-            foreach ($packagesJson['contributors'] as $contributor) {
+            foreach ((array) $packagesJson['contributors'] as $contributor) {
                 if (isset($contributor['email'])) {
                     $mentionedAuthors[] = \sprintf(
                         '%s <%s>',

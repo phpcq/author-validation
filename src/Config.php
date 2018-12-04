@@ -60,6 +60,16 @@ class Config
     protected $copyLeft = [];
 
     /**
+     * List of copy-left authors.
+     *
+     * Format
+     *   Author in array key notation: Author
+     *
+     * @var array
+     */
+    protected $copyLeftReal = [];
+
+    /**
      * List of paths to include.
      *
      * @var array
@@ -330,6 +340,7 @@ class Config
         }
 
         $this->copyLeft[$this->arrayKey($author)][$this->arrayKey($pattern)] = $pattern;
+        $this->copyLeftReal[$this->arrayKey($author)]                        = $author;
 
         return $this;
     }
@@ -366,6 +377,26 @@ class Config
         }
 
         return (bool) $this->matchPatterns($pathName, $this->copyLeft[$key]);
+    }
+
+    /**
+     * Obtain authors to be listed as copy-left contributor.
+     *
+     * @param string $pathName The path to check.
+     *
+     * @return string[]
+     */
+    public function getCopyLeftAuthors($pathName)
+    {
+        $result = [];
+        foreach ($this->copyLeft as $author => $paths) {
+            if ($this->matchPatterns($pathName, $paths)) {
+                $realAuthor                           = $this->getRealAuthor($this->copyLeftReal[$author]);
+                $result[$this->arrayKey($realAuthor)] = $realAuthor;
+            }
+        }
+
+        return $result;
     }
 
     /**

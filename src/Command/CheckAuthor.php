@@ -236,12 +236,7 @@ class CheckAuthor extends Command
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
             ->includePaths(
-                \array_filter(\array_map(
-                    function ($arg) {
-                        return \realpath($arg);
-                    },
-                    $input->getArgument('include')
-                ))
+                \array_filter(\array_map('realpath', $input->getArgument('include')))
             );
 
         $paths = \array_values($config->getIncludedPaths());
@@ -252,24 +247,24 @@ class CheckAuthor extends Command
             );
         }
 
-        $cacheDir = \sys_get_temp_dir();
+        $cacheDir = \rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
+            ? \getenv('HOMEDRIVE') . \getenv('HOMEPATH')
+            : \getenv('HOME'))) ? $tmpDir : \sys_get_temp_dir()), '\\/');
         if ($input->getOption('cache-dir')) {
             $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
         }
-        $cacheDir .= '/cache/phpcq/author-validation';
-        $output->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+        $cacheDir .= '/.cache/phpcq-author-validation';
 
-        $cachePool   = new DoctrineCachePool(new FilesystemCache($cacheDir . '/cache/phpcq/author-validation'));
-        $mainCacheId = \md5('mainCacheId/' . $git->show()->execute('./'));
-        if (!$cachePool->has($mainCacheId) || $input->getOption('debug')) {
-            $cachePool->clear();
-
-            $cachePool->set($mainCacheId, $mainCacheId);
+        if ($output->isVerbose()) {
+            $error->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
         }
+
+        $cachePool = new DoctrineCachePool(new FilesystemCache($cacheDir));
+        $cachePool->set('cacheDir', $cacheDir);
 
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool, $git);
         $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress-bar') && \posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
@@ -290,15 +285,20 @@ class CheckAuthor extends Command
      * @param Config          $config Author extractor config.
      * @param OutputInterface $error  Error output.
      * @param CacheInterface  $cache  The cache.
+     * @param GitRepository   $git    The git repository.
      *
      * @return GitAuthorExtractor|GitProjectAuthorExtractor
      */
-    private function createGitAuthorExtractor($scope, Config $config, $error, $cache)
+    private function createGitAuthorExtractor($scope, Config $config, $error, $cache, GitRepository $git)
     {
         if ($scope === 'project') {
             return new GitProjectAuthorExtractor($config, $error, $cache);
         } else {
-            return new GitAuthorExtractor($config, $error, $cache);
+            $extractor = new GitAuthorExtractor($config, $error, $cache);
+
+            $extractor->collectFilesWithCommits($git);
+
+            return $extractor;
         }
     }
 

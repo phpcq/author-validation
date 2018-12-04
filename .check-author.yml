@@ -7,3 +7,11 @@ mapping:
 copy-left:
   Jordi Boggiano <j.boggiano@seld.be>: JsonFormatter.php
   Konstantin Kudryashiv <ever.zet@gmail.com>: JsonFormatter.php
+  Christian Schiffler <c.schiffler@cyberspectrum.de>:
+    - PatchingAuthorExtractorTrait.php
+  Tristan Lins <tristan@lins.io>:
+    - GitAuthorExtractorTrait.php
+    - PatchingAuthorExtractorTrait.php
+
+exclude:
+  - tests/AuthorExtractor/Fixtures
