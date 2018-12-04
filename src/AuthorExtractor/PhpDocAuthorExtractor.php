@@ -126,34 +126,56 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             }
         }
 
-        if (!empty($newAuthors)) {
-            // Fill the gaps we just made.
-            foreach ($cleaned as $number) {
-                if (null === $author = \array_shift($newAuthors)) {
-                    break;
-                }
-                $lines[$number] = $indention . $author;
-            }
-
-            if ((int) $lastAuthor === 0) {
-                $lastAuthor = (\count($lines) - 2);
-            }
-            // Still not empty, we have mooooore.
-            if (0 < ($count = count($newAuthors))) {
-                $lines = array_merge(
-                    array_slice($lines, 0, ++$lastAuthor),
-                    array_fill(0, $count, null),
-                    array_slice($lines, $lastAuthor)
-                );
-                while ($author = \array_shift($newAuthors)) {
-                    $lines[$lastAuthor++] = $indention . $author;
-                }
-            }
-        }
+        $lines = $this->addNewAuthors($lines, $newAuthors, $cleaned, $lastAuthor, $indention);
 
         return \implode("\n", \array_filter($lines, function ($value) {
             return null !== $value;
         }));
+    }
+
+    /**
+     * Add new authors to a buffer.
+     *
+     * @param array  $lines      The buffer to update.
+     * @param array  $newAuthors The new authors to add.
+     * @param array  $emptyLines The empty line numbers.
+     * @param int    $lastAuthor The index in the buffer where the last author annotation is.
+     * @param string $indention  The annotation prefix.
+     *
+     * @return array
+     */
+    protected function addNewAuthors(array $lines, array $newAuthors, array $emptyLines, $lastAuthor, $indention)
+    {
+        if (empty($newAuthors)) {
+            return $lines;
+        }
+
+        // Fill the gaps we just made.
+        foreach ($emptyLines as $number) {
+            if (null === $author = \array_shift($newAuthors)) {
+                break;
+            }
+            $lines[$number] = $indention . $author;
+        }
+
+        if ((int) $lastAuthor === 0) {
+            $lastAuthor = (\count($lines) - 2);
+        }
+        if (0 === ($count = count($newAuthors))) {
+            return $lines;
+        }
+        // Still not empty, we have mooooore.
+        $lines = array_merge(
+            array_slice($lines, 0, ++$lastAuthor),
+            array_fill(0, $count, null),
+            array_slice($lines, $lastAuthor)
+        );
+
+        while ($author = \array_shift($newAuthors)) {
+            $lines[$lastAuthor++] = $indention . $author;
+        }
+
+        return $lines;
     }
 
     /**
