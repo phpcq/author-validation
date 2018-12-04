@@ -189,7 +189,7 @@ class AuthorListComparator
         $validates        = true;
         $mentionedAuthors = $current->extractAuthorsFor($path);
         $multipleAuthors  = $current->extractMultipleAuthorsFor($path);
-        $wantedAuthors    = $should->extractAuthorsFor($path);
+        $wantedAuthors    = array_merge($should->extractAuthorsFor($path), $this->config->getCopyLeftAuthors($path));
 
         // If current input is not valid, return.
         if ($mentionedAuthors === null) {
