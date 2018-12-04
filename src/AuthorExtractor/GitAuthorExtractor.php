@@ -25,7 +25,8 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitRepository;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
-use Symfony\Component\Finder\Finder;
+use SebastianBergmann\PHPCPD\Detector\Detector;
+use SebastianBergmann\PHPCPD\Detector\Strategy\DefaultStrategy;
 
 /**
  * Extract the author information from a git repository.
@@ -36,11 +37,39 @@ class GitAuthorExtractor implements AuthorExtractor
     use GitAuthorExtractorTrait;
 
     /**
-     * Optional attached finder for processing multiple files.
+     * File mapping list.
      *
-     * @var Finder
+     * [md5 hash => file path].
+     *
+     * @var array
      */
-    protected $finder;
+    private $filePathMapping = [];
+
+    /**
+     * The file path collection with commits and path history.
+     *
+     * [md5 file path hash => [
+     *      'commits'     => [commit1, commit2],
+     *      'pathHistory' => [path1, path2]
+     * ]
+     *
+     * @var array
+     */
+    private $filePathCollection = [];
+
+    /**
+     * The collection of commits.
+     *
+     * @var array
+     */
+    private $commitCollection = [];
+
+    /**
+     * The current path.
+     *
+     * @var string
+     */
+    private $currentPath;
 
     /**
      * Convert the git binary output to a valid author list.
@@ -77,8 +106,8 @@ class GitAuthorExtractor implements AuthorExtractor
             return false;
         }
 
-        $status  = $git->status()->short()->getIndexStatus();
-        $relPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
+        $status  = (array) $git->status()->short()->getIndexStatus();
+        $relPath = (string) \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -90,289 +119,582 @@ class GitAuthorExtractor implements AuthorExtractor
     /**
      * Retrieve the author list from the given path via calling git.
      *
-     * @param string        $path The path to check.
-     * @param GitRepository $git  The repository to extract all files from.
-     *
      * @return array
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
-     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
-    private function getAuthorListFrom($path, GitRepository $git)
+    private function getAuthorListFrom()
     {
-        $relativePath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
-
-        $commits = $this->fetchCommits($relativePath, $git);
+        $filePath = $this->getFilePathCollection($this->currentPath);
 
         $authors = [];
-        foreach ($commits as $commit) {
-            if (isset($authors[\md5($commit['name'])])) {
+        foreach ((array) $filePath['commits'] as $commit) {
+            if ($this->isMergeCommit($commit)
+                || isset($authors[\md5($commit['name'])])
+            ) {
                 continue;
             }
 
             $authors[\md5($commit['name'])] = $commit;
         }
 
+        if (isset($filePath['pathHistory'])) {
+            foreach ((array) $filePath['pathHistory'] as $pathHistory) {
+                foreach ((array) $pathHistory['commits'] as $commitHistory) {
+                    if ($this->isMergeCommit($commitHistory)
+                        || isset($authors[\md5($commitHistory['name'])])
+                    ) {
+                        continue;
+                    }
+
+                    $authors[\md5($commitHistory['name'])] = $commitHistory;
+                }
+            }
+        }
+
         return $authors;
     }
 
     /**
-     * Fetch the commits.
+     * Determine if the commit is a merge commit.
      *
-     * @param string        $filePath The file path.
-     * @param GitRepository $git      The git repository.
+     * @param array $commit The commit information.
      *
-     * @return array
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
-     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
+     * @return bool
      */
-    private function fetchCommits($filePath, GitRepository $git)
+    private function isMergeCommit(array $commit)
     {
-        $logList = $this->fetchLogByFilePath($filePath, $git);
-        if (!\count($logList)) {
-            return [];
-        }
-
-        $commitList = $this->prepareCommitList($logList);
-        $lastCommit = $this->getLastElementOfArray($commitList);
-
-        $previousList = $this->fetchPreviousFromBlame($filePath, $lastCommit['commit'], $git);
-        if (!\count($previousList)) {
-            return $commitList;
-        }
-
-        $commitList = \array_merge($commitList, $this->walkingPathList($previousList, $git));
-
-        return $commitList;
+        return 1 < (substr_count($commit['parent'], ' ') + 1);
     }
 
     /**
-     * Walking in the path list.
+     * The log format.
      *
-     * @param array         $pathList The path list.
-     * @param GitRepository $git      The git repository.
-     *
-     * @return array
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
-     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
+     * @return string
      */
-    private function walkingPathList(array $pathList, GitRepository $git)
+    private function logFormat()
     {
-        $commitList = [];
+        $logFormat = [
+            'commit'  => '%H',
+            'name'    => '%aN',
+            'email'   => '%ae',
+            'subject' => '%f',
+            'date'    => '%ci',
+            'parent'  => '%P'
+        ];
 
-        foreach ($pathList as $path) {
-            $logList = $this->fetchLogByFilePath($path, $git);
-            if (!\count($logList)) {
+        return \json_encode($logFormat);
+    }
+
+    /**
+     * Collect all files with their commits.
+     *
+     * @param GitRepository $git The git repository.
+     *
+     * @return void
+     */
+    public function collectFilesWithCommits(GitRepository $git)
+    {
+        // git show --format="%H" --quiet
+        $lastCommitId = $git->show()->format('%H')->execute('--quiet');
+        $cacheId      = \md5(__FUNCTION__ . $lastCommitId);
+
+        if ($this->cachePool->has($cacheId)) {
+            $fromCache = $this->cachePool->get($cacheId);
+
+            $this->commitCollection   = $fromCache['commitCollection'];
+            $this->filePathMapping    = $fromCache['filePathMapping'];
+            $this->filePathCollection = $fromCache['filePathCollection'];
+
+            return;
+        }
+
+        $logList = $this->fetchAllCommits($git);
+
+        $commitCollection   = [];
+        $filePathMapping    = [];
+        $filePathCollection = [];
+        foreach ($logList as $log) {
+            $currentCacheId = \md5(__FUNCTION__ . $log['commit']);
+            if ($this->cachePool->has($currentCacheId)) {
+                $fromCurrentCache = $this->cachePool->get($currentCacheId);
+
+                $commitCollection   = \array_merge($filePathMapping, $fromCurrentCache['commitCollection']);
+                $filePathMapping    = \array_merge($filePathMapping, $fromCurrentCache['filePathMapping']);
+                $filePathCollection = \array_merge($filePathCollection, $fromCurrentCache['filePathCollection']);
+
+                break;
+            }
+
+            $result = $this->fetchNameStatusFromCommit($log['commit'], $git);
+            \preg_match_all(
+                // @codingStandardsIgnoreStart
+                "/^(?(?=[A-Z][\d]{3})(?'criteria'[A-Z])(?'index'[\d]{3}|)\s+(?'from'\S*)\s+(?'to'\S*)$|(?'status'[A-Z]{1,2})\s+(?'file'\S*))$/m",
+                // @codingStandardsIgnoreEnd
+                $result,
+                $matches,
+                PREG_SET_ORDER
+            );
+            if (!\count($matches)) {
                 continue;
             }
 
-            $walkingCommitList = $this->prepareCommitList($logList);
-            $commitList        = \array_merge($commitList, $walkingCommitList);
-            $lastCommit        = $this->getLastElementOfArray($walkingCommitList);
-
-            $previousList = $this->fetchPreviousFromBlame($path, $lastCommit['commit'], $git);
-            if (\count($previousList)) {
-                $commitList = \array_merge($commitList, $this->walkingPathList($previousList, $git));
+            $changeCollection = [];
+            foreach ((array) $matches as $match) {
+                $changeCollection[] = \array_filter(\array_filter($match), 'is_string', ARRAY_FILTER_USE_KEY);
             }
 
-            $copyList = $this->fetchShowCommitWithFindCopies($path, $lastCommit['commit'], $git);
-            if (\count($copyList)) {
-                $commitList = \array_merge($commitList, $this->walkingPathList($copyList, $git));
-            }
+            $this->prepareChangeCollection(
+                $log,
+                $changeCollection,
+                $commitCollection,
+                $filePathMapping,
+                $filePathCollection
+            );
         }
 
-        return $commitList;
+        $this->cachePool->set(
+            $cacheId,
+            [
+                'commitCollection'   => $commitCollection,
+                'filePathMapping'    => $filePathMapping,
+                'filePathCollection' => $filePathCollection
+            ]
+        );
+
+        $this->commitCollection   = $commitCollection;
+        $this->filePathMapping    = $filePathMapping;
+        $this->filePathCollection = $filePathCollection;
     }
 
     /**
-     * Fetch the log by file path.
+     * Prepare the collection for commit, file path mapping and the file path.
      *
-     * @param string        $filePath The file path.
+     * @param array $commit             The commit information.
+     * @param array $changeCollection   The change collection.
+     * @param array $commitCollection   The commit collection.
+     * @param array $filePathMapping    The file path mapping.
+     * @param array $filePathCollection The file path collection.
+     *
+     * @return void
+     */
+    private function prepareChangeCollection(
+        array $commit,
+        array $changeCollection,
+        array &$commitCollection,
+        array &$filePathMapping,
+        array &$filePathCollection
+    ) {
+        foreach ($changeCollection as $change) {
+            if (!isset($commit['containedPath'])) {
+                $commit['containedPath'] = [];
+            }
+
+            if (!isset($commit['information'])) {
+                $commit['information'] = [];
+            }
+
+            if (isset($change['criteria'])) {
+                $changeToHash   = \md5($change['to']);
+                $changeFromHash = \md5($change['from']);
+
+                $commit['containedPath'][$changeToHash] = $change['to'];
+                $commit['information'][$changeToHash]   = $change;
+
+                $filePathMapping[$changeToHash]   = $change['to'];
+                $filePathMapping[$changeFromHash] = $change['from'];
+
+                $filePathCollection[$changeToHash]['commits'][$commit['commit']]   = $commit;
+                $filePathCollection[$changeFromHash]['commits'][$commit['commit']] = $commit;
+
+                $commitCollection[$commit['commit']] = $commit;
+
+                continue;
+            }
+
+            $fileHash = \md5($change['file']);
+
+            $commit['containedPath'][$fileHash] = $change['file'];
+            $commit['information'][$fileHash]   = $change;
+
+            $filePathMapping[$fileHash] = $change['file'];
+
+            $filePathCollection[$fileHash]['commits'][$commit['commit']] = $commit;
+
+            $commitCollection[$commit['commit']] = $commit;
+        }
+    }
+
+    /**
+     * Get the data to the file path collection.
+     *
+     * @param string $path The file path.
+     *
+     * @return array
+     */
+    private function getFilePathCollection($path)
+    {
+        $key = \array_flip($this->filePathMapping)[$path];
+
+        return $this->filePathCollection[$key];
+    }
+
+    /**
+     * Set the data to the file path collection.
+     *
+     * @param string $path The file path.
+     * @param array  $data The file path data.
+     *
+     * @return void
+     */
+    private function setFilePathCollection($path, array $data)
+    {
+        $key = \array_flip($this->filePathMapping)[$path];
+
+        $this->filePathCollection[$key] = $data;
+    }
+
+    /**
+     * Build the file history.
+     *
+     * @param GitRepository $git The git repository.
+     *
+     * @return void
+     */
+    private function buildFileHistory(GitRepository $git)
+    {
+        $filePath    = $this->getFilePathCollection($this->currentPath);
+        $fileHistory = $this->fetchFileHistory($this->currentPath, $git);
+        if (!\count($fileHistory)) {
+            return;
+        }
+
+        foreach ($fileHistory as $pathHistory) {
+            $filePath['pathHistory'][\md5($pathHistory)] = $this->getFilePathCollection($pathHistory);
+        }
+
+        $this->setFilePathCollection($this->currentPath, $filePath);
+    }
+
+    /**
+     * Get the file content.
+     *
+     * @param string        $search The search key (COMMIT:FILE_PATH).
+     * @param GitRepository $git    The git repository.
+     *
+     * @return string
+     */
+    private function getFileContent($search, GitRepository $git)
+    {
+        $cacheId = \md5(__FUNCTION__ . $search);
+        if (!$this->cachePool->has($cacheId)) {
+            $fileContent = $git->show()->execute($search);
+
+            $this->cachePool->set($cacheId, $fileContent);
+
+            return $fileContent;
+        }
+
+        return $this->cachePool->get($cacheId);
+    }
+
+    /**
+     * Fetch the file names with status from the commit.
+     *
+     * @param string        $commitId The commit identifier.
      * @param GitRepository $git      The git repository.
      *
-     * @return mixed
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
+     * @return string
      */
-    private function fetchLogByFilePath($filePath, GitRepository $git)
+    private function fetchNameStatusFromCommit($commitId, GitRepository $git)
     {
-        $format = '{"commit": "%H", "name": "%aN", "email": "%ae", "subject": "%f", "date": "%ci", "date": "%ci"},';
-
         $arguments = [
             $git->getConfig()->getGitExecutablePath(),
-            'log',
-            '--simplify-merges',
-            '--no-merges',
-            '--format=' . $format,
-            '--',
-            $filePath
+            'show',
+            $commitId,
+            '--name-status',
+            '--format='
         ];
 
+        // git show $commitId --name-status --format=''
+        return $this->runCustomGit($arguments, $git);
+    }
+
+    /**
+     * Fetch the current commit.
+     *
+     * @param GitRepository $git The git repository.
+     *
+     * @return array
+     */
+    private function fetchCurrentCommit(GitRepository $git)
+    {
         return \json_decode(
             \sprintf(
                 '[%s]',
-                \trim(
-                    // git log --simplify-merges --no-merges --format=$format -- $file
-                    $this->runCustomGit($arguments, $git),
-                    ','
-                )
+                // git show --format=$this->logFormat() --quiet
+                $git->show()->format($this->logFormat())->execute('--quiet')
             ),
             true
         );
     }
 
     /**
-     * Fetch the previous file list from the blame.
+     * Fetch the git log with simplify merges.
      *
-     * @param string        $filePath The file path.
-     * @param string        $commitId The commit identifier.
-     * @param GitRepository $git      The git respository.
+     * @param GitRepository $git The git repository.
      *
      * @return array
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
      */
-    private function fetchPreviousFromBlame($filePath, $commitId, GitRepository $git)
+    private function fetchAllCommits(GitRepository $git)
     {
-        $arguments = [
-            $git->getConfig()->getGitExecutablePath(),
-            'blame',
-            $commitId,
-            '--incremental',
-            '--',
-            $filePath
-        ];
+        $currentCommit = $this->fetchCurrentCommit($git);
 
-        // git blame $commitId --incremental -- $path
-        $blame = $this->runCustomGit($arguments, $git);
+        $cacheId = \md5(__FUNCTION__ . \serialize($currentCommit));
 
-        \preg_match_all('/(previous) (.+) (.+)/m', $blame, $match);
-        if (!\count($match[3])) {
+        if (!$this->cachePool->has($cacheId)) {
+            $logList = \json_decode(
+                \sprintf(
+                    '[%s]',
+                    \trim(
+                        // git log --simplify-merges --format=$this->logFormat()
+                        $git->log()->simplifyMerges()->format($this->logFormat() . ',')->execute(),
+                        ','
+                    )
+                ),
+                true
+            );
+
+            $this->cachePool->set($cacheId, $logList);
+        }
+
+        return $this->cachePool->get($cacheId);
+    }
+
+    /**
+     * Fetch the history for the file.
+     *
+     * @param string        $path The file path.
+     * @param GitRepository $git  The git repository.
+     *
+     * @return array
+     */
+    private function fetchFileHistory($path, GitRepository $git)
+    {
+        $fileHistory = [];
+        foreach ($this->fetchCommitCollectionByPath($path, $git) as $logItem) {
+            // If the renaming/copy to not found in the file history, then continue the loop.
+            if (\count($fileHistory) && !\in_array($logItem['to'], $fileHistory)) {
+                continue;
+            }
+
+            // If the file history empty (also by the start for the detection) and the to path not exactly the same
+            // with the same path, then continue the loop.
+            if (($logItem['to'] !== $path) && !\count($fileHistory)) {
+                continue;
+            }
+
+            $this->executeFollowDetection($logItem, $fileHistory, $git);
+        }
+
+        return $fileHistory;
+    }
+
+    /**
+     * Fetch the commit collection by the file path.
+     *
+     * @param string        $path The file path.
+     * @param GitRepository $git  The git repository.
+     *
+     * @return array
+     */
+    private function fetchCommitCollectionByPath($path, GitRepository $git)
+    {
+        // git log --follow --name-status --format=%H' -- $path
+        $log = $git->log()->follow()->revisionRange('--name-status')->revisionRange('--format=%H')->execute($path);
+
+        \preg_match_all(
+            "/^(?'commit'.*)\n+(?'criteria'[RC])(?'index'[\d]{3})\s+(?'from'\S*)\s+(?'to'\S*)\n/m",
+            $log,
+            $matches,
+            PREG_SET_ORDER
+        );
+        if (!\count($matches)) {
             return [];
         }
 
-        return \array_unique($match[3]);
-    }
-
-    /**
-     * Fetch a file path list from show with find copies.
-     *
-     * @param string        $filePath The file path.
-     * @param string        $commitId The commit identifier.
-     * @param GitRepository $git      The git repository.
-     *
-     * @return array
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
-     */
-    private function fetchShowCommitWithFindCopies($filePath, $commitId, GitRepository $git)
-    {
-        $arguments = [
-            $git->getConfig()->getGitExecutablePath(),
-            'show',
-            $commitId,
-            '--find-copies'
-        ];
-
-        // git show $commitId --find-copies
-        $show = $this->runCustomGit($arguments, $git);
-
-        $renamingList = \array_unique($this->matchRenamingFromLog($show, $filePath));
-        if (\in_array($filePath, $renamingList)) {
-            $key = \array_search($filePath, $renamingList);
-            unset($renamingList[$key]);
+        $logCollection = [];
+        foreach ((array) $matches as $match) {
+            $logCollection[] = \array_filter($match, 'is_string', ARRAY_FILTER_USE_KEY);
         }
 
-        return $renamingList;
-    }
-
-
-    /**
-     * Prepare the commit list.
-     *
-     * @param array $logList The log list.
-     *
-     * @return array
-     */
-    private function prepareCommitList(array $logList)
-    {
-        if (!\count($logList)) {
-            return [];
-        }
-
-        $commitList = [];
-        foreach ($logList as $log) {
-            $commitList[$log['commit']] = $log;
-        }
-
-        return $commitList;
-    }
-
-
-    /**
-     * Get the last element of a array.
-     *
-     * @param array $elementList The element list.
-     *
-     * @return array
-     */
-    private function getLastElementOfArray(array $elementList)
-    {
-        return \array_values(\array_slice($elementList, -1))[0];
+        return $logCollection;
     }
 
     /**
-     * Match renaming file from the log.
+     * Execute the file follow detection.
      *
-     * @param string $gitLog    The git log.
-     * @param string $startFrom The relative path where start the search.
+     * @param array         $logItem     The git log item.
+     * @param array         $fileHistory The file history.
+     * @param GitRepository $git         The git repository.
      *
-     * @return array
+     * @return void
      */
-    private function matchRenamingFromLog($gitLog, $startFrom = '')
+    private function executeFollowDetection(array $logItem, array &$fileHistory, GitRepository $git)
     {
-        \preg_match_all('/^(rename|copy)\s+([^\n]*?)\n/m', $gitLog, $match);
+        $currentCommit = $this->commitCollection[$logItem['commit']];
 
-        $matchRenaming = [];
-        foreach ($match[2] as $index => $row) {
-            // Put the first renaming to the match list, find the first file by the start filter.
-            if ($startFrom && (1 >= \count($matchRenaming))) {
-                if ('to ' . $startFrom === $row) {
-                    $fromRenaming = $match[2][($index - 1)];
+        if (($logItem['index'] <= 70) && \in_array($logItem['criteria'], ['R', 'C'])) {
+            if (isset($currentCommit['information'][\md5($logItem['to'])])) {
+                $pathInformation = $currentCommit['information'][\md5($logItem['to'])];
 
-                    $matchRenaming[\md5($fromRenaming)] = \preg_replace('(^from )', '', $fromRenaming);
-                    $matchRenaming[\md5($row)]          = \preg_replace('(^to )', '', $row);
+                if (isset($pathInformation['status']) && ($pathInformation['status'] === 'A')) {
+                    return;
                 }
-                continue;
             }
-
-            // Put the first renaming to the match list.
-            if (1 >= \count($matchRenaming)) {
-                $matchRenaming[\md5($row)] = \preg_replace('(^to |^from )', '', $row);
-
-                continue;
-            }
-
-            \preg_match('(^to |^from )', $row, $renamingDirection);
-            if ('from ' === $renamingDirection[0]) {
-                continue;
-            }
-
-            $compareHash = \md5('from ' . \preg_replace('(^to )', '', $row));
-            // If not found in the renaming file list, we are continue here.
-            if (!\array_key_exists($compareHash, $matchRenaming)) {
-                continue;
-            }
-
-            $fromRenaming = $match[2][($index - 1)];
-
-            $matchRenaming[\md5($fromRenaming)] = \preg_replace('(^from )', '', $fromRenaming);
-            $matchRenaming[\md5($row)]          = \preg_replace('(^to )', '', $row);
         }
 
-        return $matchRenaming;
+        $this->renamingDetection($logItem, $currentCommit, $fileHistory, $git);
+        $this->copyDetection($logItem, $fileHistory, $git);
+    }
+
+    /**
+     * Detected file follow by the renaming criteria.
+     *
+     * @param array         $logItem       The git log item.
+     * @param array         $currentCommit The current commit information.
+     * @param array         $fileHistory   The file history.
+     * @param GitRepository $git           The git repository.
+     *
+     * @return void
+     */
+    private function renamingDetection(array $logItem, array $currentCommit, array &$fileHistory, GitRepository $git)
+    {
+        if ($logItem['criteria'] !== 'R') {
+            return;
+        }
+
+        if ((int) $logItem['index'] >= 75) {
+            $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+
+            return;
+        }
+
+        $fromFileContent = $this->getFileContent($currentCommit['parent'] . ':' . $logItem['from'], $git);
+        $toFileContent   = $this->getFileContent($logItem['commit'] . ':' . $logItem['to'], $git);
+        $tempFrom        =
+            $this->createTempFile($logItem['commit'] . ':' . $logItem['from'], $fromFileContent);
+        $tempTo          = $this->createTempFile($logItem['commit'] . ':' . $logItem['to'], $toFileContent);
+
+        $detector = new Detector(new DefaultStrategy());
+        $result   = $detector->copyPasteDetection([$tempFrom, $tempTo], 2, 7);
+
+        if (!$result->count()) {
+            return;
+        }
+
+        $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+    }
+
+    /**
+     * Detected file follow by the copy criteria.
+     *
+     * @param array         $logItem     The git log item.
+     * @param array         $fileHistory The file history.
+     * @param GitRepository $git         The git repository.
+     *
+     * @return void
+     */
+    private function copyDetection(array $logItem, array &$fileHistory, GitRepository $git)
+    {
+        if ($logItem['criteria'] !== 'C') {
+            return;
+        }
+
+        $fromLastCommit        = $this->commitCollection[$logItem['commit']]['parent'];
+        $fromFileContent       = $this->getFileContent($fromLastCommit . ':' . $logItem['from'], $git);
+        $fromFileContentLength = \strlen($fromFileContent);
+
+        $toFileContent       = $this->getFileContent($logItem['commit'] . ':' . $logItem['to'], $git);
+        $toFileContentLength = \strlen($toFileContent);
+
+        if ($fromFileContentLength === $toFileContentLength) {
+            $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+
+            return;
+        }
+
+        $tempFrom =
+            $this->createTempFile($logItem['commit'] . ':' . $logItem['from'], $fromFileContent);
+        $tempTo   = $this->createTempFile($logItem['commit'] . ':' . $logItem['to'], $toFileContent);
+
+        $detector = new Detector(new DefaultStrategy());
+        $result   = $detector->copyPasteDetection([$tempFrom, $tempTo], 5, 35);
+
+        if (!$result->count()) {
+            return;
+        }
+
+        $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+    }
+
+    /**
+     * Create a temporary file.
+     *
+     * @param string $name    The file name.
+     * @param string $content The file content.
+     *
+     * @return string
+     *
+     * @throws \RuntimeException Throws an exception if the directory not created for the file.
+     */
+    private function createTempFile($name, $content)
+    {
+        $cacheDir = $this->cachePool->get('cacheDir');
+        $fileName = \md5($name);
+        $filePath = $cacheDir . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $fileName;
+
+        if (\file_exists($filePath)) {
+            return $filePath;
+        }
+
+        if (!\file_exists(\dirname($filePath)) && !mkdir($concurrentDirectory = \dirname($filePath))
+            && !is_dir(
+                $concurrentDirectory
+            )) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+        }
+
+        $file = fopen($filePath, 'wb');
+
+        \fwrite($file, $content);
+
+        return $filePath;
+    }
+
+    /**
+     * Remove the temporary directory.
+     *
+     * @return void
+     */
+    private function removeTempDirectory()
+    {
+        $cacheDir      = $this->cachePool->get('cacheDir');
+        $directoryPath = $cacheDir . DIRECTORY_SEPARATOR . 'temp';
+
+        if (!\file_exists($directoryPath)) {
+            return;
+        }
+
+        $directory = \opendir($directoryPath);
+
+        while (($file = readdir($directory)) !== false) {
+            if (\in_array($file, ['.', '..'])) {
+                continue;
+            }
+
+            unlink($directoryPath . DIRECTORY_SEPARATOR . $file);
+        }
+
+        \rmdir($directoryPath);
     }
 
     /**
@@ -383,13 +705,16 @@ class GitAuthorExtractor implements AuthorExtractor
      * @return string[]|null
      *
      * @throws \ReflectionException Which is not available on your PHP installation.
-     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     protected function doExtract($path)
     {
-        $git = $this->getGitRepositoryFor($path);
+        $git               = $this->getGitRepositoryFor($path);
+        $this->currentPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
-        $authors = $this->convertAuthorList($this->getAuthorListFrom($path, $git));
+        $this->buildFileHistory($git);
+        $this->removeTempDirectory();
+
+        $authors = $this->convertAuthorList($this->getAuthorListFrom());
 
         // Check if the file path is a file, if so, we need to check if it is "dirty" and someone is currently working
         // on it.

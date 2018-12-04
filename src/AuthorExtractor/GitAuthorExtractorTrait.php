@@ -28,6 +28,7 @@ use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\ProcessUtils;
 
 /**
  * Base trait for author extraction from a git repository.
@@ -103,7 +104,7 @@ trait GitAuthorExtractorTrait
     /**
      * Retrieve the file path to use in reporting.
      *
-     * @return string
+     * @return array
      *
      * @throws \ReflectionException Thrown if the class does not exist.
      */
@@ -111,10 +112,10 @@ trait GitAuthorExtractorTrait
     {
         $files = [];
         foreach ($this->config->getIncludedPaths() as $path) {
-            $files = array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
+            $files[] = $this->getAllFilesFromGit($this->getGitRepositoryFor($path));
         }
 
-        return $files;
+        return array_merge(...$files);
     }
 
     /**
@@ -197,27 +198,22 @@ trait GitAuthorExtractorTrait
      *
      * @throws GitException When the git execution failed.
      * @throws \ReflectionException Thrown if the class does not exist.
-     * @throws \Psr\SimpleCache\InvalidArgumentException Thrown if the $key string is not a legal value.
      */
     private function runCustomGit(array $arguments, GitRepository $git)
     {
-        $cacheId = \md5('arguments/' . \implode('/', $arguments));
+        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+        $git->getConfig()->getLogger()->debug(
+            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+        );
 
-        if (!$this->cachePool->has($cacheId)) {
-            $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
-            $git->getConfig()->getLogger()->debug(
-                \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
-            );
+        $process->run();
+        $result = rtrim($process->getOutput(), "\r\n");
 
-            $process->run();
-            $this->cachePool->set($cacheId, rtrim($process->getOutput(), "\r\n"));
-
-            if (!$process->isSuccessful()) {
-                throw GitException::createFromProcess('Could not execute git command', $process);
-            }
+        if (!$process->isSuccessful()) {
+            throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        return $this->cachePool->get($cacheId);
+        return $result;
     }
 
     /**
@@ -231,12 +227,12 @@ trait GitAuthorExtractorTrait
      */
     protected function prepareProcessArguments(array $arguments)
     {
-        $reflection = new \ReflectionClass('Symfony\Component\Process\ProcessUtils');
+        $reflection = new \ReflectionClass(ProcessUtils::class);
 
         if (!$reflection->hasMethod('escapeArgument')) {
             return $arguments;
         }
 
-        return \implode(' ', \array_map(['Symfony\Component\Process\ProcessUtils', 'escapeArgument'], $arguments));
+        return \implode(' ', \array_map([ProcessUtils::class, 'escapeArgument'], $arguments));
     }
 }

@@ -63,9 +63,9 @@ trait AuthorExtractorTrait
     /**
      * Create a new instance.
      *
-     * @param Config          $config The configuration this extractor shall operate with.
-     * @param OutputInterface $output The output interface to use for logging.
-     * @param CacheInterface           $cachePool  The cachePool.
+     * @param Config          $config    The configuration this extractor shall operate with.
+     * @param OutputInterface $output    The output interface to use for logging.
+     * @param CacheInterface  $cachePool The cachePool.
      */
     public function __construct(Config $config, OutputInterface $output, CacheInterface $cachePool)
     {
@@ -79,24 +79,19 @@ trait AuthorExtractorTrait
      */
     public function extractAuthorsFor($path)
     {
-        $cacheId = \md5('authors/' . $path . \get_class($this));
-        if (!$this->cachePool->has($cacheId)) {
-            $result = $this->beautifyAuthorList($this->doExtract($path));
-            if (\is_array($result)) {
-                $authors = [];
-                foreach ($result as $author) {
-                    $author = $this->config->getRealAuthor($author);
-                    if ($author) {
-                        $authors[\strtolower($author)] = $author;
-                    }
+        $result = $this->beautifyAuthorList($this->doExtract($path));
+        if (\is_array($result)) {
+            $authors = [];
+            foreach ($result as $author) {
+                $author = $this->config->getRealAuthor($author);
+                if ($author) {
+                    $authors[\strtolower($author)] = $author;
                 }
-                $result = $authors;
             }
-
-            $this->cachePool->set($cacheId, $result);
+            $result = $authors;
         }
 
-        return $this->cachePool->get($cacheId);
+        return $result;
     }
 
     /**

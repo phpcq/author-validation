@@ -134,10 +134,10 @@ class AuthorListComparator
 
         foreach ($this->config->getIncludedPaths() as $prefix) {
             $prefixLength = \strlen($prefix);
-            if (\substr($path, 0, $prefixLength) === $prefix) {
+            if (strpos($path, $prefix) === 0) {
                 $patchFile = \substr($path, $prefixLength);
 
-                if ($patchFile[0] == '/') {
+                if (strncmp($patchFile, '/', 1) === 0) {
                     $patchFile = \substr($patchFile, 1);
                 }
                 break;
@@ -189,7 +189,7 @@ class AuthorListComparator
         $validates        = true;
         $mentionedAuthors = $current->extractAuthorsFor($path);
         $multipleAuthors  = $current->extractMultipleAuthorsFor($path);
-        $wantedAuthors    = $should->extractAuthorsFor($path);
+        $wantedAuthors    = array_merge($should->extractAuthorsFor($path), $this->config->getCopyLeftAuthors($path));
 
         // If current input is not valid, return.
         if ($mentionedAuthors === null) {
