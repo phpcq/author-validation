@@ -101,7 +101,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      */
     protected function setAuthors($docBlock, $authors)
     {
-        $newAuthors = array_values($authors);
+        $newAuthors = array_unique(array_values($authors));
         $lines      = \explode("\n", $docBlock);
         $lastAuthor = 0;
         $indention  = ' * @author     ';
@@ -129,7 +129,10 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
         if (!empty($newAuthors)) {
             // Fill the gaps we just made.
             foreach ($cleaned as $number) {
-                $lines[$number] = $indention . \array_shift($newAuthors);
+                if (null === $author = \array_shift($newAuthors)) {
+                    break;
+                }
+                $lines[$number] = $indention . $author;
             }
 
             if ((int) $lastAuthor === 0) {
