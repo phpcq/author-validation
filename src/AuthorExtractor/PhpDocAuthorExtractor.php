@@ -82,7 +82,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             return '';
         }
 
-        $docBlock = \substr($content, 0, ($closing + 2));
+        $docBlock = \substr($content, 0, ($closing + 3));
 
         if ($authors) {
             return $this->setAuthors($docBlock, $this->calculateUpdatedAuthors($path, $authors));
