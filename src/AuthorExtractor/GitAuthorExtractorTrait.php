@@ -115,7 +115,7 @@ trait GitAuthorExtractorTrait
             $files[] = $this->getAllFilesFromGit($this->getGitRepositoryFor($path));
         }
 
-        return \call_user_func_array('array_merge', $files);
+        return array_merge(...$files);
     }
 
     /**

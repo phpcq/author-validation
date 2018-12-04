@@ -236,12 +236,7 @@ class CheckAuthor extends Command
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
             ->includePaths(
-                \array_filter(
-                    \array_map(
-                        'realpath',
-                        $input->getArgument('include')
-                    )
-                )
+                \array_filter(\array_map('realpath', $input->getArgument('include')))
             );
 
         $paths = \array_values($config->getIncludedPaths());
