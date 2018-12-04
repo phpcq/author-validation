@@ -101,7 +101,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      */
     protected function setAuthors($docBlock, $authors)
     {
-        $newAuthors = $authors;
+        $newAuthors = array_values($authors);
         $lines      = \explode("\n", $docBlock);
         $lastAuthor = 0;
         $indention  = ' * @author     ';
@@ -118,10 +118,11 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             $index = $this->searchAuthor($line, $newAuthors);
 
             // Obsolete entry, remove it.
-            if ($index !== false) {
-                unset($newAuthors[(int) $index]);
+            if (false === $index) {
                 $lines[$number] = null;
                 $cleaned[]      = $number;
+            } else {
+                unset($newAuthors[$index]);
             }
         }
 
@@ -134,8 +135,16 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             if ((int) $lastAuthor === 0) {
                 $lastAuthor = (\count($lines) - 2);
             }
-            while ($author = \array_shift($newAuthors)) {
-                $lines[$lastAuthor++] = $indention . $author;
+            // Still not empty, we have mooooore.
+            if (0 < ($count = count($newAuthors))) {
+                $lines = array_merge(
+                    array_slice($lines, 0, ++$lastAuthor),
+                    array_fill(0, $count, null),
+                    array_slice($lines, $lastAuthor)
+                );
+                while ($author = \array_shift($newAuthors)) {
+                    $lines[$lastAuthor++] = $indention . $author;
+                }
             }
         }
 
