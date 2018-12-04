@@ -107,7 +107,7 @@ class GitAuthorExtractor implements AuthorExtractor
         }
 
         $status  = (array) $git->status()->short()->getIndexStatus();
-        $relPath = (string) \substr($path, \strlen($git->getRepositoryPath()) + 1);
+        $relPath = (string) \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -162,7 +162,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function isMergeCommit(array $commit)
     {
-        return 1 < substr_count($commit['parent'], ' ') + 1;
+        return 1 < (substr_count($commit['parent'], ' ') + 1);
     }
 
     /**
@@ -288,7 +288,7 @@ class GitAuthorExtractor implements AuthorExtractor
                 $commit['containedPath'] = [];
             }
 
-            if (!isset($log['information'])) {
+            if (!isset($commit['information'])) {
                 $commit['information'] = [];
             }
 
@@ -311,6 +311,7 @@ class GitAuthorExtractor implements AuthorExtractor
             }
 
             $fileHash = \md5($change['file']);
+
             $commit['containedPath'][$fileHash] = $change['file'];
             $commit['information'][$fileHash]   = $change;
 
@@ -708,7 +709,7 @@ class GitAuthorExtractor implements AuthorExtractor
     protected function doExtract($path)
     {
         $git               = $this->getGitRepositoryFor($path);
-        $this->currentPath = \substr($path, \strlen($git->getRepositoryPath()) + 1);
+        $this->currentPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
 
         $this->buildFileHistory($git);
         $this->removeTempDirectory();

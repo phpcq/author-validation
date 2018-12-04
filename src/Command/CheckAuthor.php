@@ -236,12 +236,12 @@ class CheckAuthor extends Command
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
             ->includePaths(
-                \array_filter(\array_map(
-                    function ($arg) {
-                        return \realpath($arg);
-                    },
-                    $input->getArgument('include')
-                ))
+                \array_filter(
+                    \array_map(
+                        'realpath',
+                        $input->getArgument('include')
+                    )
+                )
             );
 
         $paths = \array_values($config->getIncludedPaths());
@@ -252,9 +252,9 @@ class CheckAuthor extends Command
             );
         }
 
-        $cacheDir = rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
-            ? getenv('HOMEDRIVE') . getenv('HOMEPATH')
-            : getenv('HOME'))) ? $tmpDir : sys_get_temp_dir()), '\\/');
+        $cacheDir = \rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
+            ? \getenv('HOMEDRIVE') . \getenv('HOMEPATH')
+            : \getenv('HOME'))) ? $tmpDir : \sys_get_temp_dir()), '\\/');
         if ($input->getOption('cache-dir')) {
             $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
         }

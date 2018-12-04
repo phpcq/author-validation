@@ -28,6 +28,7 @@ use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\ProcessUtils;
 
 /**
  * Base trait for author extraction from a git repository.
@@ -103,7 +104,7 @@ trait GitAuthorExtractorTrait
     /**
      * Retrieve the file path to use in reporting.
      *
-     * @return string
+     * @return array
      *
      * @throws \ReflectionException Thrown if the class does not exist.
      */
@@ -111,10 +112,10 @@ trait GitAuthorExtractorTrait
     {
         $files = [];
         foreach ($this->config->getIncludedPaths() as $path) {
-            $files = array_merge($files, $this->getAllFilesFromGit($this->getGitRepositoryFor($path)));
+            $files[] = $this->getAllFilesFromGit($this->getGitRepositoryFor($path));
         }
 
-        return $files;
+        return \call_user_func_array('array_merge', $files);
     }
 
     /**
@@ -226,12 +227,12 @@ trait GitAuthorExtractorTrait
      */
     protected function prepareProcessArguments(array $arguments)
     {
-        $reflection = new \ReflectionClass('Symfony\Component\Process\ProcessUtils');
+        $reflection = new \ReflectionClass(ProcessUtils::class);
 
         if (!$reflection->hasMethod('escapeArgument')) {
             return $arguments;
         }
 
-        return \implode(' ', \array_map(['Symfony\Component\Process\ProcessUtils', 'escapeArgument'], $arguments));
+        return \implode(' ', \array_map([ProcessUtils::class, 'escapeArgument'], $arguments));
     }
 }

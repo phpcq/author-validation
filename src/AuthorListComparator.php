@@ -134,10 +134,10 @@ class AuthorListComparator
 
         foreach ($this->config->getIncludedPaths() as $prefix) {
             $prefixLength = \strlen($prefix);
-            if (\substr($path, 0, $prefixLength) === $prefix) {
+            if (strpos($path, $prefix) === 0) {
                 $patchFile = \substr($path, $prefixLength);
 
-                if ($patchFile[0] == '/') {
+                if (strncmp($patchFile, '/', 1) === 0) {
                     $patchFile = \substr($patchFile, 1);
                 }
                 break;

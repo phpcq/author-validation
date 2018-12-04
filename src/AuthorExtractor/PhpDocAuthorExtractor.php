@@ -59,7 +59,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
         }
 
         $mentionedAuthors = [];
-        foreach ($matches[1] as $match) {
+        foreach ((array) $matches[1] as $match) {
             $mentionedAuthors[] = $match[0];
         }
 
@@ -118,8 +118,8 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             $index = $this->searchAuthor($line, $newAuthors);
 
             // Obsolete entry, remove it.
-            if (false !== $index) {
-                unset($newAuthors[$index]);
+            if ($index !== false) {
+                unset($newAuthors[(int) $index]);
                 $lines[$number] = null;
                 $cleaned[]      = $number;
             }
@@ -131,7 +131,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
                 $lines[$number] = $indention . \array_shift($newAuthors);
             }
 
-            if ($lastAuthor == 0) {
+            if ((int) $lastAuthor === 0) {
                 $lastAuthor = (\count($lines) - 2);
             }
             while ($author = \array_shift($newAuthors)) {
