@@ -410,6 +410,7 @@ class GitAuthorExtractor implements AuthorExtractor
             $git->getConfig()->getGitExecutablePath(),
             'show',
             $commitId,
+            '-M',
             '--name-status',
             '--format='
         ];
