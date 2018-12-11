@@ -415,7 +415,7 @@ class GitAuthorExtractor implements AuthorExtractor
             '--format='
         ];
 
-        // git show $commitId --name-status --format=''
+        // git show $commitId -M --name-status --format=''
         return $this->runCustomGit($arguments, $git);
     }
 
@@ -509,7 +509,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function fetchCommitCollectionByPath($path, GitRepository $git)
     {
-        // git log --follow --name-status --format=%H' -- $path
+        // git log --follow --name-status --format='%H' -- $path
         $log = $git->log()->follow()->revisionRange('--name-status')->revisionRange('--format=%H')->execute($path);
 
         \preg_match_all(
