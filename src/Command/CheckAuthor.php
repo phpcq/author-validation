@@ -49,6 +49,8 @@ class CheckAuthor extends Command
 {
     /**
      * {@inheritDoc}
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     protected function configure()
     {
@@ -138,10 +140,16 @@ class CheckAuthor extends Command
                 'The cache directory do you will use. Is this option not set, then the system temp dir used.'
             )
             ->addOption(
-                'no-progress-bar',
+                'no-progress',
                 null,
                 InputOption::VALUE_NONE,
                 'Disable the progress bar output.'
+            )
+            ->addOption(
+                'no-progress-bar',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable the progress bar output. Use --no-progress [DEPRECATED]'
             );
     }
 
@@ -218,6 +226,8 @@ class CheckAuthor extends Command
             return 1;
         }
 
+        $this->enableDeprecatedNoProgressBar($input);
+
         $config = new Config();
 
         if (!$input->getOption('do-not-ignore-well-known-bots')) {
@@ -265,7 +275,7 @@ class CheckAuthor extends Command
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
         $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool, $git);
-        $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress-bar') && \posix_isatty(STDOUT);
+        $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress') && \posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
 
@@ -276,6 +286,32 @@ class CheckAuthor extends Command
         }
 
         return $failed ? 1 : 0;
+    }
+
+    /**
+     * Enable the deprecated no progress bar option.
+     *
+     * @param InputInterface $input The input.
+     *
+     * @return void
+     *
+     * @deprecated This is deprecated since 1.4 and where removed in 2.0. Use the option no-progress instead.
+     */
+    private function enableDeprecatedNoProgressBar(InputInterface $input)
+    {
+        if (!$input->getOption('no-progress-bar')) {
+            return;
+        }
+
+        // @codingStandardsIgnoreStart
+        @trigger_error(
+            'The command option --no-progress-bar is deprecated since 1.4 and where removed in 2.0.
+             Use --no-progress instead.',
+            E_USER_DEPRECATED
+        );
+        // @codingStandardsIgnoreEnd
+
+        $input->setOption('no-progress', true);
     }
 
     /**
