@@ -245,9 +245,8 @@ class GitAuthorExtractor implements AuthorExtractor
     private function matchFileInformation($result)
     {
         \preg_match_all(
-            // @codingStandardsIgnoreStart
-            "/^(?(?=[A-Z][\d]{3})(?'criteria'[A-Z])(?'index'[\d]{3}|)\s+(?'from'\S*)\s+(?'to'\S*)$|(?'status'[A-Z]{1,2})\s+(?'file'\S*))$/m",
-            // @codingStandardsIgnoreEnd
+            "/^(?(?=[A-Z][\d]{3})(?'criteria'[A-Z])(?'index'[\d]{3})\t(?'from'.+)\t(?'to'.+)$" .
+            "|(?'status'[A-Z]{1,2})\t(?'file'.+))$/m",
             $result,
             $matches,
             PREG_SET_ORDER
@@ -609,7 +608,7 @@ class GitAuthorExtractor implements AuthorExtractor
         $log = $git->log()->follow()->revisionRange('--name-status')->revisionRange('--format=%H')->execute($path);
 
         \preg_match_all(
-            "/^(?'commit'.*)\n+(?'criteria'[RC])(?'index'[\d]{3})\s+(?'from'\S*)\s+(?'to'\S*)\n/m",
+            "/^(?'commit'.*)\n+(?'criteria'[RC])(?'index'[\d]{3})\t(?'from'.+)\t(?'to'.+)\n/m",
             $log,
             $matches,
             PREG_SET_ORDER
