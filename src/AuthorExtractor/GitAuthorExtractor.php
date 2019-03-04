@@ -438,10 +438,11 @@ class GitAuthorExtractor implements AuthorExtractor
                     $parents[1],
                     '--diff-filter=R',
                     '--name-status',
-                    '--format='
+                    '--format=',
+                    '-M'
                 ];
 
-                // git diff currentCommit rightCommit --diff-filter=R --name-status --format=''
+                // git diff currentCommit rightCommit --diff-filter=R --name-status --format='' -M
                 $matches = $this->matchFileInformation($this->runCustomGit($arguments, $git));
                 foreach ($matches as $match) {
                     if (!\in_array($this->currentPath, $match)) {
