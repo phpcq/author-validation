@@ -745,9 +745,9 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function createTempFile($name, $content)
     {
-        $cacheDir = $this->cachePool->get('cacheDir');
+        $tempDir  = \sys_get_temp_dir();
         $fileName = \md5($name);
-        $filePath = $cacheDir . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $fileName;
+        $filePath = $tempDir . DIRECTORY_SEPARATOR . 'phpcq-author-validation' . DIRECTORY_SEPARATOR . $fileName;
 
         if (\file_exists($filePath)) {
             return $filePath;
@@ -774,8 +774,8 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function removeTempDirectory()
     {
-        $cacheDir      = $this->cachePool->get('cacheDir');
-        $directoryPath = $cacheDir . DIRECTORY_SEPARATOR . 'temp';
+        $tempDir       = \sys_get_temp_dir();
+        $directoryPath = $tempDir . DIRECTORY_SEPARATOR . 'phpcq-author-validation';
 
         if (!\file_exists($directoryPath)) {
             return;
