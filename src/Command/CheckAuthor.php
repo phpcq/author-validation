@@ -26,6 +26,7 @@ namespace PhpCodeQuality\AuthorValidation\Command;
 use Bit3\GitPhp\GitRepository;
 use Cache\Adapter\Doctrine\DoctrineCachePool;
 use Doctrine\Common\Cache\FilesystemCache;
+use Doctrine\Common\Cache\VoidCache;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
@@ -128,10 +129,10 @@ class CheckAuthor extends Command
                 ['.']
             )
             ->addOption(
-                'debug',
+                'no-cache',
                 null,
                 InputOption::VALUE_NONE,
-                'Enable the debug mode.'
+                'Use this option, if you not use the cache.'
             )
             ->addOption(
                 'cache-dir',
@@ -269,8 +270,11 @@ class CheckAuthor extends Command
             $error->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
         }
 
-        $cachePool = new DoctrineCachePool(new FilesystemCache($cacheDir));
-        $cachePool->set('cacheDir', $cacheDir);
+        $cachePool = new DoctrineCachePool(
+            $input->getOption('no-cache')
+                ? new VoidCache()
+                : new FilesystemCache($cacheDir)
+        );
 
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
