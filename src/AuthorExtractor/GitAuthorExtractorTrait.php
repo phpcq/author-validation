@@ -62,7 +62,6 @@ trait GitAuthorExtractorTrait
      * @return string[]
      *
      * @throws GitException When the git execution failed.
-     * @throws \ReflectionException Thrown if the class does not exist.
      */
     private function getAllFilesFromGit($git)
     {
@@ -150,7 +149,6 @@ trait GitAuthorExtractorTrait
      * @return string
      *
      * @throws GitException When the git execution failed.
-     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function getCurrentUserInfo($git)
     {
@@ -197,7 +195,6 @@ trait GitAuthorExtractorTrait
      * @return string
      *
      * @throws GitException When the git execution failed.
-     * @throws \ReflectionException Thrown if the class does not exist.
      */
     private function runCustomGit(array $arguments, GitRepository $git)
     {
