@@ -50,8 +50,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.3.x-dev",
-            "dev-release/1.5.0": "1.5.x-dev"
+            "dev-master": "1.5.x-dev"
         }
     },
     "bin": ["bin/check-author.php"]
