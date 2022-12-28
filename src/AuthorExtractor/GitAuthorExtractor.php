@@ -243,7 +243,7 @@ class GitAuthorExtractor implements AuthorExtractor
 
         $this->prepareCommitCollection(
             $git,
-            $this->fetchAllCommits($git, $lastCommitId),
+            $this->fetchAllCommits($git),
             $commitCollection,
             $filePathMapping,
             $filePathCollection
