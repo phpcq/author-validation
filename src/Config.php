@@ -563,11 +563,7 @@ class Config
     {
         $author = $this->arrayKey($author);
 
-        if (isset($this->metadata[$author][$name])) {
-            return $this->metadata[$author][$name];
-        }
-
-        return null;
+        return $this->metadata[$author][$name] ?? null;
     }
 
     /**
