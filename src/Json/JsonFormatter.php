@@ -50,7 +50,7 @@ class JsonFormatter
      *
      * @return string
      */
-    public static function format($data)
+    public static function format(array $data): string
     {
         // This is:
         // JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE

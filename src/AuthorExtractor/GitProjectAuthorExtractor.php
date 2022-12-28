@@ -43,7 +43,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      *
      * @var Finder
      */
-    protected $finder;
+    protected Finder $finder;
 
     /**
      * Convert the git binary output to a valid author list.
@@ -52,7 +52,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      *
      * @return string[]
      */
-    private function convertAuthorList($authors)
+    private function convertAuthorList(string $authors): array
     {
         if (!$authors) {
             return array();
@@ -74,7 +74,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      *
      * @return bool
      */
-    private function hasUncommittedChanges($git)
+    private function hasUncommittedChanges(GitRepository $git): bool
     {
         $status = $git->status()->short()->getIndexStatus();
 
@@ -92,7 +92,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      *
      * @return string
      */
-    private function getAuthorListFrom($git)
+    private function getAuthorListFrom(GitRepository $git): string
     {
         return $git->shortlog()->summary()->email()->revisionRange('HEAD')->execute();
     }
@@ -106,7 +106,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      *
      * @throws \ReflectionException Thrown if the class does not exist.
      */
-    protected function doExtract($path)
+    protected function doExtract(string $path): ?array
     {
         $git = $this->getGitRepositoryFor($path);
 

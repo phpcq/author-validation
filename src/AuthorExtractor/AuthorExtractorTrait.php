@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,7 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -37,28 +37,28 @@ trait AuthorExtractorTrait
      *
      * @var Config
      */
-    protected $config;
+    protected Config $config;
 
     /**
      * The output to use for logging.
      *
      * @var OutputInterface
      */
-    protected $output;
+    protected OutputInterface $output;
 
     /**
      * The list of ignored authors.
      *
      * @var string
      */
-    protected $ignoredAuthors;
+    protected string $ignoredAuthors;
 
     /**
      * The cache.
      *
      * @var CacheInterface
      */
-    protected $cachePool;
+    protected CacheInterface $cachePool;
 
     /**
      * Create a new instance.
@@ -77,7 +77,7 @@ trait AuthorExtractorTrait
     /**
      * {@inheritDoc}
      */
-    public function extractAuthorsFor($path)
+    public function extractAuthorsFor(string $path): ?array
     {
         $result = $this->beautifyAuthorList($this->doExtract($path));
         if (\is_array($result)) {
@@ -97,7 +97,7 @@ trait AuthorExtractorTrait
     /**
      * {@inheritDoc}
      */
-    public function extractMultipleAuthorsFor($path)
+    public function extractMultipleAuthorsFor(string $path): array
     {
         $authors = \array_count_values((array) $this->doExtract($path));
         if (!\count($authors)) {
@@ -121,9 +121,9 @@ trait AuthorExtractorTrait
      *
      * @param string[]|null $authors The authors to work on.
      *
-     * @return string[] The filtered and sorted list.
+     * @return string[]|null The filtered and sorted list.
      */
-    private function beautifyAuthorList($authors)
+    private function beautifyAuthorList(?array $authors): ?array
     {
         if ($authors === null) {
             return null;
@@ -147,7 +147,7 @@ trait AuthorExtractorTrait
      *
      * @return string[]|null The author list.
      */
-    abstract protected function doExtract($path);
+    abstract protected function doExtract(string $path): ?array;
 
     /**
      * Build a Symfony Finder instance that searches all included paths for files.
@@ -157,7 +157,7 @@ trait AuthorExtractorTrait
      *
      * @return Finder
      */
-    protected function buildFinder()
+    protected function buildFinder(): Finder
     {
         return $this->setupFinder();
     }
@@ -167,7 +167,7 @@ trait AuthorExtractorTrait
      *
      * @return Finder
      */
-    protected function setupFinder()
+    protected function setupFinder(): Finder
     {
         $finder = new Finder();
         $finder

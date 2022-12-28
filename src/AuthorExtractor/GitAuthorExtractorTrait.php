@@ -55,7 +55,7 @@ trait GitAuthorExtractorTrait
      *
      * @return GitRepository.
      */
-    protected function getGitRepositoryFor($path)
+    protected function getGitRepositoryFor(string $path): GitRepository
     {
         $git = new GitRepository($this->determineGitRoot($path));
         if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
@@ -76,7 +76,7 @@ trait GitAuthorExtractorTrait
      *
      * @throws GitException When the git execution failed.
      */
-    private function getAllFilesFromGit($git)
+    private function getAllFilesFromGit(GitRepository $git): array
     {
         $gitDir = $git->getRepositoryPath();
         // Sadly no command in our git library for this.
@@ -120,7 +120,7 @@ trait GitAuthorExtractorTrait
      *
      * @throws \ReflectionException Thrown if the class does not exist.
      */
-    public function getFilePaths()
+    public function getFilePaths(): array
     {
         $files = [];
         foreach ($this->config->getIncludedPaths() as $path) {
@@ -137,9 +137,9 @@ trait GitAuthorExtractorTrait
      *
      * @return string The git root path.
      *
-     * @throws \RuntimeException If the git root could not determined.
+     * @throws RuntimeException If the git root could not determined.
      */
-    private function determineGitRoot($path)
+    private function determineGitRoot(string $path): string
     {
         // @codingStandardsIgnoreStart
         while (strlen($path) > 1) {
@@ -163,7 +163,7 @@ trait GitAuthorExtractorTrait
      *
      * @throws GitException When the git execution failed.
      */
-    protected function getCurrentUserInfo($git)
+    protected function getCurrentUserInfo(GitRepository $git): string
     {
         // Sadly no command in our git library for this.
         $arguments = [
@@ -209,7 +209,7 @@ trait GitAuthorExtractorTrait
      *
      * @throws GitException When the git execution failed.
      */
-    private function runCustomGit(array $arguments, GitRepository $git)
+    private function runCustomGit(array $arguments, GitRepository $git): string
     {
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
         $git->getConfig()->getLogger()->debug(

@@ -71,7 +71,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @var array
      */
-    private $filePathMapping = [];
+    private array $filePathMapping = [];
 
     /**
      * The file path collection with commits and path history.
@@ -83,21 +83,21 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @var array
      */
-    private $filePathCollection = [];
+    private array $filePathCollection = [];
 
     /**
      * The collection of commits.
      *
      * @var array
      */
-    private $commitCollection = [];
+    private array $commitCollection = [];
 
     /**
      * The current path.
      *
      * @var string
      */
-    private $currentPath;
+    private string $currentPath;
 
     /**
      * Convert the git binary output to a valid author list.
@@ -106,7 +106,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function convertAuthorList(array $authors)
+    private function convertAuthorList(array $authors): array
     {
         if (!$authors) {
             return [];
@@ -128,7 +128,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return bool
      */
-    private function isDirtyFile($path, $git)
+    private function isDirtyFile(string $path, GitRepository $git): bool
     {
         if (!\is_file($path)) {
             return false;
@@ -149,7 +149,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function getAuthorListFrom()
+    private function getAuthorListFrom(): array
     {
         $filePath = $this->getFilePathCollection($this->currentPath);
 
@@ -190,7 +190,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return bool
      */
-    private function isMergeCommit(array $commit)
+    private function isMergeCommit(array $commit): bool
     {
         return 1 < (substr_count($commit['parent'], ' ') + 1);
     }
@@ -200,7 +200,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return string
      */
-    private function logFormat()
+    private function logFormat(): string
     {
         $logFormat = [
             'commit'  => '%H',
@@ -221,7 +221,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    public function collectFilesWithCommits(GitRepository $git)
+    public function collectFilesWithCommits(GitRepository $git): void
     {
         // git show --format="%H" --quiet
         $lastCommitId = $git->show()->format('%H')->execute('--quiet');
@@ -270,7 +270,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function matchFileInformation($result)
+    private function matchFileInformation(string $result): array
     {
         preg_match_all(
             "/^(?(?=[A-Z][\d]{3})(?'criteria'[A-Z])(?'index'[\d]{3})\t(?'from'.+)\t(?'to'.+)$" .
@@ -300,7 +300,7 @@ class GitAuthorExtractor implements AuthorExtractor
         array &$commitCollection,
         array &$filePathMapping,
         array &$filePathCollection
-    ) {
+    ): void {
         foreach ($logList as $log) {
             $currentCacheId = md5(__FUNCTION__ . $log['commit']);
             if ($this->cachePool->has($currentCacheId)) {
@@ -350,7 +350,7 @@ class GitAuthorExtractor implements AuthorExtractor
         array &$commitCollection,
         array &$filePathMapping,
         array &$filePathCollection
-    ) {
+    ): void {
         foreach ($changeCollection as $change) {
             if (!isset($commit['containedPath'])) {
                 $commit['containedPath'] = [];
@@ -398,7 +398,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function getFilePathCollection($path)
+    private function getFilePathCollection(string $path): array
     {
         $key = array_flip($this->filePathMapping)[$path];
 
@@ -413,7 +413,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    private function setFilePathCollection($path, array $data)
+    private function setFilePathCollection(string $path, array $data): void
     {
         $key = array_flip($this->filePathMapping)[$path];
 
@@ -427,7 +427,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return int
      */
-    private function countMergeCommits(array $commitList)
+    private function countMergeCommits(array $commitList): int
     {
         $count = 0;
         foreach ($commitList as $filePathCommit) {
@@ -448,7 +448,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    private function buildFileHistory(GitRepository $git)
+    private function buildFileHistory(GitRepository $git): void
     {
         $filePath = $this->getFilePathCollection($this->currentPath);
 
@@ -504,7 +504,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return string
      */
-    private function getFileContent($search, GitRepository $git)
+    private function getFileContent(string $search, GitRepository $git): string
     {
         $cacheId = md5(__FUNCTION__ . $search);
         if (!$this->cachePool->has($cacheId)) {
@@ -526,7 +526,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return string
      */
-    private function fetchNameStatusFromCommit($commitId, GitRepository $git)
+    private function fetchNameStatusFromCommit(string $commitId, GitRepository $git): string
     {
         $arguments = [
             $git->getConfig()->getGitExecutablePath(),
@@ -548,7 +548,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function fetchCurrentCommit(GitRepository $git)
+    private function fetchCurrentCommit(GitRepository $git): array
     {
         return json_decode(
             sprintf(
@@ -567,7 +567,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function fetchAllCommits(GitRepository $git)
+    private function fetchAllCommits(GitRepository $git): array
     {
         $currentCommit = $this->fetchCurrentCommit($git);
 
@@ -602,7 +602,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function fetchFileHistory($path, GitRepository $git)
+    private function fetchFileHistory(string $path, GitRepository $git): array
     {
         $fileHistory = [];
         foreach ($this->fetchCommitCollectionByPath($path, $git) as $logItem) {
@@ -631,7 +631,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return array
      */
-    private function fetchCommitCollectionByPath($path, GitRepository $git)
+    private function fetchCommitCollectionByPath(string $path, GitRepository $git): array
     {
         // git log --follow --name-status --format='%H' -- $path
         $log = $git->log()->follow()->revisionRange('--name-status')->revisionRange('--format=%H')->execute($path);
@@ -663,7 +663,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    private function executeFollowDetection(array $logItem, array &$fileHistory, GitRepository $git)
+    private function executeFollowDetection(array $logItem, array &$fileHistory, GitRepository $git): void
     {
         $currentCommit = $this->commitCollection[$logItem['commit']];
 
@@ -691,8 +691,12 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    private function renamingDetection(array $logItem, array $currentCommit, array &$fileHistory, GitRepository $git)
-    {
+    private function renamingDetection(
+        array $logItem,
+        array $currentCommit,
+        array &$fileHistory,
+        GitRepository $git
+    ): void {
         if ($logItem['criteria'] !== 'R') {
             return;
         }
@@ -728,7 +732,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    private function copyDetection(array $logItem, array &$fileHistory, GitRepository $git)
+    private function copyDetection(array $logItem, array &$fileHistory, GitRepository $git): void
     {
         if ($logItem['criteria'] !== 'C') {
             return;
@@ -768,9 +772,9 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return string
      *
-     * @throws \RuntimeException Throws an exception if the directory not created for the file.
+     * @throws RuntimeException Throws an exception if the directory not created for the file.
      */
-    private function createTempFile($name, $content)
+    private function createTempFile(string $name, string $content): string
     {
         $tempDir  = sys_get_temp_dir();
         $fileName = md5($name);
@@ -800,7 +804,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @return void
      */
-    private function removeTempDirectory()
+    private function removeTempDirectory(): void
     {
         $tempDir       = sys_get_temp_dir();
         $directoryPath = $tempDir . DIRECTORY_SEPARATOR . 'phpcq-author-validation';
@@ -828,10 +832,8 @@ class GitAuthorExtractor implements AuthorExtractor
      * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]|null
-     *
-     * @throws \ReflectionException Which is not available on your PHP installation.
      */
-    protected function doExtract($path)
+    protected function doExtract(string $path): ?array
     {
         $git               = $this->getGitRepositoryFor($path);
         $this->currentPath = \substr($path, (strlen($git->getRepositoryPath()) + 1));

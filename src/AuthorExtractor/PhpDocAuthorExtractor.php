@@ -53,12 +53,12 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @var string
      */
-    protected $filePath;
+    protected string $filePath;
 
     /**
      * {@inheritDoc}
      */
-    protected function buildFinder()
+    protected function buildFinder(): Finder
     {
         return $this->setupFinder()->name('*.php');
     }
@@ -66,7 +66,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    protected function doExtract($path)
+    protected function doExtract(string $path): array
     {
         if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
             return [];
@@ -83,7 +83,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    public function getBuffer($path, $authors = null)
+    public function getBuffer(string $path, ?array $authors = null): ?string
     {
         if (!is_file($path)) {
             return '';
@@ -113,7 +113,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return string The updated doc block.
      */
-    protected function setAuthors($docBlock, $authors)
+    protected function setAuthors(string $docBlock, array $authors): string
     {
         $newAuthors = array_unique(array_values($authors));
         $lines      = explode("\n", $docBlock);
@@ -158,8 +158,13 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return array
      */
-    protected function addNewAuthors(array $lines, array $newAuthors, array $emptyLines, $lastAuthor, $indention)
-    {
+    protected function addNewAuthors(
+        array $lines,
+        array $newAuthors,
+        array $emptyLines,
+        int $lastAuthor,
+        string $indention
+    ): array {
         if (empty($newAuthors)) {
             return $lines;
         }
@@ -200,7 +205,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return false|int
      */
-    private function searchAuthor($line, $authors)
+    private function searchAuthor(string $line, array $authors)
     {
         foreach ($authors as $index => $author) {
             [$name, $email] = explode(' <', $author);

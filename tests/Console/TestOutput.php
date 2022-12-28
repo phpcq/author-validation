@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2020 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,7 +12,7 @@
  *
  * @package    phpcq/author-validation
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2020 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @link       https://github.com/phpcq/author-validation
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @filesource
@@ -29,12 +29,12 @@ class TestOutput extends Output
 {
     public $output = '';
 
-    public function clear()
+    public function clear(): void
     {
         $this->output = '';
     }
 
-    protected function doWrite($message, $newline)
+    protected function doWrite($message, $newline): void
     {
         $this->output .= $message.($newline ? "\n" : '');
     }

@@ -50,7 +50,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    protected function doExtract($path)
+    protected function doExtract(string $path): ?array
     {
         $packagesJson = $this->loadFile($path);
 
@@ -97,7 +97,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return array The updated json array.
      */
-    protected function setAuthors($json, $authors)
+    protected function setAuthors(array $json, array $authors): array
     {
         // If no author set yet, use the first one as author.
         if (!isset($json['author'])) {
@@ -126,7 +126,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return array
      */
-    private function convertAuthor($author)
+    private function convertAuthor(string $author): array
     {
         [$name, $email] = explode(' <', $author);
         return [

@@ -64,7 +64,7 @@ class CheckAuthor extends Command
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('phpcq:check-author')
@@ -162,19 +162,19 @@ class CheckAuthor extends Command
     /**
      * Create all source extractors as specified on the command line.
      *
-     * @param InputInterface         $input     The input interface.
-     * @param OutputInterface        $output    The output interface to use for logging.
-     * @param Config                 $config    The configuration.
-     * @param CacheInterface         $cachePool The cache.
+     * @param InputInterface  $input     The input interface.
+     * @param OutputInterface $output    The output interface to use for logging.
+     * @param Config          $config    The configuration.
+     * @param CacheInterface  $cachePool The cache.
      *
      * @return AuthorExtractor[]
      */
     protected function createSourceExtractors(
         InputInterface $input,
         OutputInterface $output,
-        $config,
+        Config $config,
         CacheInterface $cachePool
-    ) {
+    ): array {
         $options = [
             'bower'     => AuthorExtractor\BowerAuthorExtractor::class,
             'composer'  => AuthorExtractor\ComposerAuthorExtractor::class,
@@ -201,8 +201,11 @@ class CheckAuthor extends Command
      *
      * @return bool
      */
-    private function handleExtractors($extractors, AuthorExtractor $reference, AuthorListComparator $comparator)
-    {
+    private function handleExtractors(
+        array $extractors,
+        AuthorExtractor $reference,
+        AuthorListComparator $comparator
+    ): bool {
         $failed = false;
 
         foreach ($extractors as $extractor) {
@@ -218,7 +221,7 @@ class CheckAuthor extends Command
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $error = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
@@ -308,8 +311,13 @@ class CheckAuthor extends Command
      *
      * @return GitAuthorExtractor|GitProjectAuthorExtractor
      */
-    private function createGitAuthorExtractor($scope, Config $config, $error, $cache, GitRepository $git)
-    {
+    private function createGitAuthorExtractor(
+        string $scope,
+        Config $config,
+        OutputInterface $error,
+        CacheInterface $cache,
+        GitRepository $git
+    ) {
         if ($scope === 'project') {
             return new GitProjectAuthorExtractor($config, $error, $cache);
         } else {

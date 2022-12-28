@@ -38,7 +38,7 @@ class ConfigTest extends TestCase
      *
      * @return void
      */
-    public function testAuthorMapping()
+    public function testAuthorMapping(): void
     {
         $config = new Config();
 
@@ -85,7 +85,7 @@ class ConfigTest extends TestCase
      *
      * @return void
      */
-    public function testIgnoredAuthors()
+    public function testIgnoredAuthors(): void
     {
         $config = new Config();
 
@@ -106,7 +106,7 @@ class ConfigTest extends TestCase
      *
      * @return void
      */
-    public function testIgnoredAuthorMapping()
+    public function testIgnoredAuthorMapping(): void
     {
         $config = new Config();
 
@@ -141,7 +141,7 @@ class ConfigTest extends TestCase
      *
      * @return void
      */
-    public function testMatchPattern()
+    public function testMatchPattern(): void
     {
         $this->markTestIncomplete(
             'Double asterisk globing is currently handled the same way as single asterisk globing'
@@ -168,7 +168,7 @@ class ConfigTest extends TestCase
      *
      * @return void
      */
-    public function testCopyLeftAuthors()
+    public function testCopyLeftAuthors(): void
     {
         $config = new Config();
 

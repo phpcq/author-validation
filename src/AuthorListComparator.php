@@ -46,35 +46,35 @@ class AuthorListComparator
      *
      * @var Config
      */
-    protected $config;
+    protected Config $config;
 
     /**
      * The output to use for logging.
      *
      * @var OutputInterface
      */
-    protected $output;
+    protected OutputInterface $output;
 
     /**
      * The diff tool to use.
      *
-     * @var \Diff_Renderer_Abstract
+     * @var Diff_Renderer_Abstract|null
      */
-    protected $diff;
+    protected ?Diff_Renderer_Abstract $diff;
 
     /**
      * The patch file being generated.
      *
-     * @var string
+     * @var array
      */
-    protected $patchSet;
+    protected array $patchSet;
 
     /**
      * Use the progress bar.
      *
      * @var bool
      */
-    protected $useProgressBar;
+    protected bool $useProgressBar;
 
     /**
      * Create a new instance.
@@ -83,7 +83,7 @@ class AuthorListComparator
      * @param OutputInterface $output         The output interface to use for logging.
      * @param bool            $useProgressBar Determine for use the progress bar.
      */
-    public function __construct(Config $config, OutputInterface $output, $useProgressBar)
+    public function __construct(Config $config, OutputInterface $output, bool $useProgressBar)
     {
         $this->config         = $config;
         $this->output         = $output;
@@ -97,7 +97,7 @@ class AuthorListComparator
      *
      * @return AuthorListComparator
      */
-    public function shallGeneratePatches($flag = true)
+    public function shallGeneratePatches(bool $flag = true): AuthorListComparator
     {
         $this->diff = $flag ? new Diff_Renderer_Text_Unified() : null;
 
@@ -109,9 +109,9 @@ class AuthorListComparator
      *
      * NOTE: you have to set shallGeneratePatches() first.
      *
-     * @return null|string
+     * @return null|array
      */
-    public function getPatchSet()
+    public function getPatchSet(): ?array
     {
         return $this->diff ? $this->patchSet : null;
     }
@@ -125,7 +125,7 @@ class AuthorListComparator
      *
      * @return bool True if the patch has been collected, false otherwise.
      */
-    private function patchExtractor($path, $extractor, $wantedAuthors)
+    private function patchExtractor(string $path, AuthorExtractor $extractor, array $wantedAuthors): bool
     {
         if (!($this->diff && $extractor instanceof PatchingExtractor)) {
             return false;
@@ -172,7 +172,7 @@ class AuthorListComparator
      *
      * @return array
      */
-    private function determineSuperfluous($mentionedAuthors, $wantedAuthors, $path)
+    private function determineSuperfluous(array $mentionedAuthors, array $wantedAuthors, string $path): array
     {
         $superfluous = [];
         foreach (array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
@@ -194,8 +194,12 @@ class AuthorListComparator
      *
      * @return bool
      */
-    private function comparePath(AuthorExtractor $current, AuthorExtractor $should, ProgressBar $progressBar, $path)
-    {
+    private function comparePath(
+        AuthorExtractor $current,
+        AuthorExtractor $should,
+        ProgressBar $progressBar,
+        string $path
+    ): bool {
         $validates        = true;
         $mentionedAuthors = $current->extractAuthorsFor($path);
         $multipleAuthors  = $current->extractMultipleAuthorsFor($path);
@@ -290,7 +294,7 @@ class AuthorListComparator
      *
      * @return bool
      */
-    public function compare(AuthorExtractor $current, AuthorExtractor $should)
+    public function compare(AuthorExtractor $current, AuthorExtractor $should): bool
     {
         $shouldPaths  = $should->getFilePaths();
         $currentPaths = $current->getFilePaths();

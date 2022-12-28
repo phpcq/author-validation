@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,7 +15,7 @@
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -25,6 +25,7 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Extract the author information from a composer.json file.
@@ -38,7 +39,7 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    protected function buildFinder()
+    protected function buildFinder(): Finder
     {
         return $this->setupFinder()->name('composer.json');
     }
@@ -46,7 +47,7 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    protected function doExtract($path)
+    protected function doExtract(string $path): ?array
     {
         $composerJson = $this->loadFile($path);
 
@@ -95,7 +96,7 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return array The updated json array.
      */
-    protected function setAuthors($json, $authors)
+    protected function setAuthors(array $json, array $authors): array
     {
         $json['authors'] = [];
         foreach ($authors as $author) {

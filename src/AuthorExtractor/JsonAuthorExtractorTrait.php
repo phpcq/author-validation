@@ -40,7 +40,7 @@ trait JsonAuthorExtractorTrait
      *
      * @return array
      */
-    protected function loadFile($path)
+    protected function loadFile(string $path): ?array
     {
         $composerJson = $this->fileData($path);
 
@@ -54,7 +54,7 @@ trait JsonAuthorExtractorTrait
      *
      * @return string
      */
-    protected function encodeData($json)
+    protected function encodeData(array $json): string
     {
         return JsonFormatter::format($json);
     }
@@ -67,12 +67,12 @@ trait JsonAuthorExtractorTrait
      *
      * @return array The updated json array.
      */
-    abstract protected function setAuthors($json, $authors);
+    abstract protected function setAuthors(array $json, array $authors): array;
 
     /**
      * {@inheritDoc}
      */
-    public function getBuffer($path, $authors = null)
+    public function getBuffer(string $path, ?array $authors = null): ?string
     {
         if ($authors === null) {
             return $this->fileData($path);
@@ -91,7 +91,7 @@ trait JsonAuthorExtractorTrait
      *
      * @return string|null
      */
-    private function fileData($path)
+    private function fileData(string $path): ?string
     {
         if (!is_file($path)) {
             return null;

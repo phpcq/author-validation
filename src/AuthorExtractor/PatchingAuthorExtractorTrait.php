@@ -43,7 +43,7 @@ trait PatchingAuthorExtractorTrait
      *
      * @return string[]
      */
-    protected function calculateUpdatedAuthors($path, $authors)
+    protected function calculateUpdatedAuthors(string $path, array $authors): array
     {
         return array_merge(array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
     }
@@ -51,7 +51,7 @@ trait PatchingAuthorExtractorTrait
     /**
      * {@inheritDoc}
      */
-    public function getFilePaths()
+    public function getFilePaths(): array
     {
         $finder = $this->buildFinder();
         $files  = [];
