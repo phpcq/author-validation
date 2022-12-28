@@ -1,8 +1,7 @@
-[![Version](http://img.shields.io/packagist/v/phpcq/author-validation.svg?style=flat-square)](https://packagist.org/packages/phpcq/author-validation)
-[![Stable Build Status](http://img.shields.io/travis/phpcq/author-validation/master.svg?style=flat-square)](https://travis-ci.org/phpcq/author-validation)
-[![Upstream Build Status](http://img.shields.io/travis/phpcq/author-validation/develop.svg?style=flat-square)](https://travis-ci.org/phpcq/author-validation)
-[![License](http://img.shields.io/packagist/l/phpcq/author-validation.svg?style=flat-square)](https://github.com/phpcq/author-validation/blob/master/LICENSE)
-[![Downloads](http://img.shields.io/packagist/dt/phpcq/author-validation.svg?style=flat-square)](https://packagist.org/packages/phpcq/author-validation)
+[![Build Status](https://github.com/phpcq/author-validation/actions/workflows/diagnostics.yml/badge.svg)](https://github.com/phpcq/author-validation/actions)
+[![Latest Version tagged](http://img.shields.io/github/tag/phpcq/author-validation.svg)](https://github.com/phpcq/author-validation/tags)
+[![Latest Version on Packagist](http://img.shields.io/packagist/v/phpcq/author-validation.svg)](https://packagist.org/packages/phpcq/author-validation)
+[![Installations via composer per month](http://img.shields.io/packagist/dm/phpcq/author-validation.svg)](https://packagist.org/packages/phpcq/author-validation)
 
 Validate the author information within PHP files, composer.json, bower.json or packages.json.
 =============================================================================================
