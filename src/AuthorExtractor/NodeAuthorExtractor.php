@@ -26,11 +26,12 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\PatchingExtractor;
-
 use Symfony\Component\Finder\Finder;
+
 use function array_shift;
 use function explode;
 use function sprintf;
+use function substr;
 use function trim;
 
 /**
@@ -134,7 +135,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
         [$name, $email] = explode(' <', $author);
         return [
             'name'     => trim($name),
-            'email'    => trim(\substr($email, 0, -1)),
+            'email'    => trim(substr($email, 0, -1)),
         ];
     }
 }

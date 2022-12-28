@@ -33,7 +33,10 @@ use SebastianBergmann\PHPCPD\Detector\Strategy\DefaultStrategy;
 
 use function array_filter;
 use function array_flip;
+use function array_keys;
+use function array_map;
 use function array_merge;
+use function array_reverse;
 use function count;
 use function dirname;
 use function explode;
@@ -41,6 +44,7 @@ use function file_exists;
 use function fopen;
 use function fwrite;
 use function in_array;
+use function is_file;
 use function json_decode;
 use function json_encode;
 use function md5;
@@ -52,6 +56,7 @@ use function rmdir;
 use function serialize;
 use function sprintf;
 use function strlen;
+use function substr;
 use function sys_get_temp_dir;
 use function trim;
 use function unlink;
@@ -114,7 +119,7 @@ class GitAuthorExtractor implements AuthorExtractor
             return [];
         }
 
-        return \array_map(
+        return array_map(
             function ($author) {
                 return $author['name'] . ' <' . $author['email'] . '>';
             },
@@ -132,12 +137,12 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function isDirtyFile(string $path, GitRepository $git): bool
     {
-        if (!\is_file($path)) {
+        if (!is_file($path)) {
             return false;
         }
 
         $status  = (array) $git->status()->short()->getIndexStatus();
-        $relPath = (string) \substr($path, (strlen($git->getRepositoryPath()) + 1));
+        $relPath = (string) substr($path, (strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -457,7 +462,7 @@ class GitAuthorExtractor implements AuthorExtractor
         // If the commit history only merges,
         // then use the last merge commit for find the renaming file for follow the history.
         if (count((array) $filePath['commits']) === $this->countMergeCommits($filePath['commits'])) {
-            $commit = $filePath['commits'][\array_reverse(\array_keys($filePath['commits']))[0]];
+            $commit = $filePath['commits'][array_reverse(array_keys($filePath['commits']))[0]];
             if ($this->isMergeCommit($commit)) {
                 $parents = explode(' ', $commit['parent']);
 
@@ -838,7 +843,7 @@ class GitAuthorExtractor implements AuthorExtractor
     protected function doExtract(string $path): ?array
     {
         $git               = $this->getGitRepositoryFor($path);
-        $this->currentPath = \substr($path, (strlen($git->getRepositoryPath()) + 1));
+        $this->currentPath = substr($path, (strlen($git->getRepositoryPath()) + 1));
 
         $this->buildFileHistory($git);
         $this->removeTempDirectory();

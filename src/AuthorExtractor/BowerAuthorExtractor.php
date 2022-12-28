@@ -28,6 +28,11 @@ use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\PatchingExtractor;
 use Symfony\Component\Finder\Finder;
 
+use function array_map;
+use function is_array;
+use function is_string;
+use function sprintf;
+
 /**
  * Extract the author information from a bower.json file.
  */
@@ -56,18 +61,18 @@ class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
             return null;
         }
 
-        if (isset($bowerJson['authors']) && \is_array($bowerJson['authors'])) {
+        if (isset($bowerJson['authors']) && is_array($bowerJson['authors'])) {
             return [];
         }
 
-        $mentionedAuthors = \array_map(
+        $mentionedAuthors = array_map(
             function ($author) {
-                if (\is_string($author)) {
+                if (is_string($author)) {
                     return $author;
                 }
 
                 if (isset($author['email'])) {
-                    return \sprintf(
+                    return sprintf(
                         '%s <%s>',
                         $author['name'],
                         $author['email']

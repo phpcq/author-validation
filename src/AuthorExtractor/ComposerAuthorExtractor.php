@@ -29,6 +29,13 @@ use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\PatchingExtractor;
 use Symfony\Component\Finder\Finder;
 
+use function array_map;
+use function explode;
+use function is_array;
+use function sprintf;
+use function substr;
+use function trim;
+
 /**
  * Extract the author information from a composer.json file.
  */
@@ -57,15 +64,15 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
             return null;
         }
 
-        if (!(isset($composerJson['authors']) && \is_array($composerJson['authors']))) {
+        if (!(isset($composerJson['authors']) && is_array($composerJson['authors']))) {
             return [];
         }
 
         $config           = $this->config;
-        $mentionedAuthors = \array_map(
+        $mentionedAuthors = array_map(
             function ($author) use ($config) {
                 if (isset($author['email'])) {
-                    $author['name'] = \sprintf(
+                    $author['name'] = sprintf(
                         '%s <%s>',
                         $author['name'],
                         $author['email']
@@ -102,11 +109,11 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
     {
         $json['authors'] = [];
         foreach ($authors as $author) {
-            list($name, $email) = \explode(' <', $author);
+            list($name, $email) = explode(' <', $author);
 
             $config = [
-                'name'     => \trim($name),
-                'email'    => \trim(\substr($email, 0, -1))
+                'name'     => trim($name),
+                'email'    => trim(substr($email, 0, -1))
             ];
 
             if ($this->config->hasMetadata($author, 'homepage')) {

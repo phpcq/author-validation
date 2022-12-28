@@ -27,6 +27,15 @@ use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
+use function array_count_values;
+use function array_intersect_key;
+use function array_map;
+use function array_unique;
+use function count;
+use function is_array;
+use function strtolower;
+use function usort;
+
 /**
  * Trait for author extraction.
  */
@@ -80,12 +89,12 @@ trait AuthorExtractorTrait
     public function extractAuthorsFor(string $path): ?array
     {
         $result = $this->beautifyAuthorList($this->doExtract($path));
-        if (\is_array($result)) {
+        if (is_array($result)) {
             $authors = [];
             foreach ($result as $author) {
                 $author = $this->config->getRealAuthor($author);
                 if ($author) {
-                    $authors[\strtolower($author)] = $author;
+                    $authors[strtolower($author)] = $author;
                 }
             }
             $result = $authors;
@@ -99,8 +108,8 @@ trait AuthorExtractorTrait
      */
     public function extractMultipleAuthorsFor(string $path): array
     {
-        $authors = \array_count_values((array) $this->doExtract($path));
-        if (!\count($authors)) {
+        $authors = array_count_values((array) $this->doExtract($path));
+        if (!count($authors)) {
             return [];
         }
 
@@ -129,12 +138,12 @@ trait AuthorExtractorTrait
             return null;
         }
 
-        $authors = \array_intersect_key($authors, \array_unique(\array_map('strtolower', $authors)));
-        \usort($authors, 'strcasecmp');
+        $authors = array_intersect_key($authors, array_unique(array_map('strtolower', $authors)));
+        usort($authors, 'strcasecmp');
 
         $mapped = [];
         foreach ($authors as $author) {
-            $mapped[\strtolower($author)] = $author;
+            $mapped[strtolower($author)] = $author;
         }
 
         return $mapped;

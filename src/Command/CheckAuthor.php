@@ -35,6 +35,7 @@ use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
 use Psr\SimpleCache\CacheInterface;
+use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -47,10 +48,15 @@ use function array_filter;
 use function array_map;
 use function array_values;
 use function dirname;
+use function func_get_arg;
 use function getenv;
+use function is_dir;
 use function is_file;
 use function posix_isatty;
 use function rtrim;
+use function sprintf;
+use function strlen;
+use function sys_get_temp_dir;
 
 /**
  * Class to check the mentioned authors.
@@ -270,14 +276,14 @@ class CheckAuthor extends Command
 
         $cacheDir = rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
             ? getenv('HOMEDRIVE') . getenv('HOMEPATH')
-            : getenv('HOME'))) ? $tmpDir : \sys_get_temp_dir()), '\\/');
+            : getenv('HOME'))) ? $tmpDir : sys_get_temp_dir()), '\\/');
         if ($input->getOption('cache-dir')) {
             $cacheDir = rtrim($input->getOption('cache-dir'), '/');
         }
         $cacheDir .= '/.cache/phpcq-author-validation';
 
         if ($output->isVerbose()) {
-            $error->writeln(\sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+            $error->writeln(sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
         }
 
         $cachePool = new DoctrineCachePool(
@@ -338,20 +344,20 @@ class CheckAuthor extends Command
      *
      * @return string The git root path.
      *
-     * @throws \RuntimeException If the git root could not determined.
+     * @throws RuntimeException If the git root could not determined.
      */
     private function determineGitRoot(string $path): string
     {
         // @codingStandardsIgnoreStart
-        while (\strlen($path) > 1) {
+        while (strlen($path) > 1) {
             // @codingStandardsIgnoreEnd
-            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
                 return $path;
             }
 
             $path = dirname($path);
         }
 
-        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
+        throw new RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
     }
 }
