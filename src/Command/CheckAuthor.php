@@ -326,7 +326,7 @@ class CheckAuthor extends Command
         CacheInterface $cache,
         GitRepository $git
     ) {
-        if ($scope === 'project') {
+        if ('project' === $scope) {
             return new GitProjectAuthorExtractor($config, $error, $cache);
         } else {
             $extractor = new GitAuthorExtractor($config, $error, $cache);

@@ -134,7 +134,7 @@ trait AuthorExtractorTrait
      */
     private function beautifyAuthorList(?array $authors): ?array
     {
-        if ($authors === null) {
+        if (null === $authors) {
             return null;
         }
 

@@ -76,7 +76,7 @@ trait JsonAuthorExtractorTrait
      */
     public function getBuffer(string $path, ?array $authors = null): ?string
     {
-        if ($authors === null) {
+        if (null === $authors) {
             return $this->fileData($path);
         }
 

@@ -95,7 +95,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
         // 4k ought to be enough of a file header for anyone (I hope).
         $content = file_get_contents($path, false, null, 0, 4096);
         $closing = strpos($content, '*/');
-        if ($closing === false) {
+        if (false === $closing) {
             return '';
         }
 
@@ -125,7 +125,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
         $cleaned    = [];
 
         foreach ($lines as $number => $line) {
-            if (strpos($line, '@author') === false) {
+            if (false === strpos($line, '@author')) {
                 continue;
             }
             $lastAuthor = $number;
@@ -186,7 +186,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             $lines[$number] = $indention . $author;
         }
 
-        if ($lastAuthor === 0) {
+        if (0 === $lastAuthor) {
             $lastAuthor = (count($lines) - 2);
         }
         if (0 === ($count = count($newAuthors))) {
@@ -221,7 +221,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
 
             $name  = trim($name);
             $email = trim(substr($email, 0, -1));
-            if ((strpos($line, $name) !== false) && (strpos($line, $email) !== false)) {
+            if ((false !== strpos($line, $name)) && (false !== strpos($line, $email))) {
                 unset($authors[$index]);
                 return $index;
             }

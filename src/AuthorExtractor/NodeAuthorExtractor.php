@@ -58,7 +58,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
     {
         $packagesJson = $this->loadFile($path);
 
-        if ($packagesJson === null) {
+        if (null === $packagesJson) {
             return null;
         }
 

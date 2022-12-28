@@ -60,7 +60,7 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
     {
         $composerJson = $this->loadFile($path);
 
-        if ($composerJson === null) {
+        if (null === $composerJson) {
             return null;
         }
 

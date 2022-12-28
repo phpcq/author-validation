@@ -704,7 +704,7 @@ class GitAuthorExtractor implements AuthorExtractor
         array &$fileHistory,
         GitRepository $git
     ): void {
-        if ($logItem['criteria'] !== 'R') {
+        if ('R' !== $logItem['criteria']) {
             return;
         }
 
@@ -741,7 +741,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function copyDetection(array $logItem, array &$fileHistory, GitRepository $git): void
     {
-        if ($logItem['criteria'] !== 'C') {
+        if ('C' !== $logItem['criteria']) {
             return;
         }
 
@@ -822,7 +822,7 @@ class GitAuthorExtractor implements AuthorExtractor
 
         $directory = opendir($directoryPath);
 
-        while (($file = readdir($directory)) !== false) {
+        while (false !== ($file = readdir($directory))) {
             if (in_array($file, ['.', '..'])) {
                 continue;
             }

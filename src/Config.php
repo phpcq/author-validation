@@ -112,7 +112,7 @@ class Config
      */
     public function __construct($configFileName = false)
     {
-        if ($configFileName !== false) {
+        if (false !== $configFileName) {
             $this->addFromYml($configFileName);
         }
     }
@@ -139,7 +139,7 @@ class Config
      */
     private function matchPattern(string $pathName, string $pattern): bool
     {
-        if ($pattern[0] !== '/') {
+        if ('/' !== $pattern[0]) {
             $pattern = '**/' . $pattern;
         }
 

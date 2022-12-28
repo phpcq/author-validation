@@ -57,7 +57,7 @@ class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
     {
         $bowerJson = $this->loadFile($path);
 
-        if ($bowerJson === null) {
+        if (null === $bowerJson) {
             return null;
         }
 

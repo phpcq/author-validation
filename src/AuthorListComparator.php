@@ -148,10 +148,10 @@ class AuthorListComparator
 
         foreach ($this->config->getIncludedPaths() as $prefix) {
             $prefixLength = strlen($prefix);
-            if (strpos($path, $prefix) === 0) {
+            if (0 === strpos($path, $prefix)) {
                 $patchFile = substr($path, $prefixLength);
 
-                if (strncmp($patchFile, '/', 1) === 0) {
+                if (0 === strncmp($patchFile, '/', 1)) {
                     $patchFile = substr($patchFile, 1);
                 }
                 break;
@@ -210,7 +210,7 @@ class AuthorListComparator
         $wantedAuthors    = array_merge($should->extractAuthorsFor($path), $this->config->getCopyLeftAuthors($path));
 
         // If current input is not valid, return.
-        if ($mentionedAuthors === null) {
+        if (null === $mentionedAuthors) {
             if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $this->output->writeln(
                     sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
