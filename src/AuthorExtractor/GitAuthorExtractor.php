@@ -141,7 +141,7 @@ class GitAuthorExtractor implements AuthorExtractor
             return false;
         }
 
-        $status  = (array) $git->status()->short()->getIndexStatus();
+        $status  = $git->status()->short()->getIndexStatus();
         $relPath = (string) substr($path, (strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
