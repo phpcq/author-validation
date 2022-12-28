@@ -22,10 +22,10 @@
     "source": "https://github.com/phpcq/author-validation"
   },
   "require": {
-    "php": "^7.4",
+    "php": "^7.4 || ^8.0",
     "ext-json": "*",
     "ext-posix": "*",
-    "bit3/git-php": "^1.5",
+    "bit3/git-php": "^1.6@dev",
     "cache/doctrine-adapter": "^1.0",
     "doctrine/cache": "^1.5",
     "phpspec/php-diff": "^1.0",
