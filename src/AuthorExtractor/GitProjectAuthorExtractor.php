@@ -58,7 +58,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
             return array();
         }
 
-        // remove commit sumary of author list
+        // remove commit summary of author list
         return array_map(
             function ($author) {
                 return preg_replace('~\s*([\d]+)\s+(.*)~', '$2', $author);
