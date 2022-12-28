@@ -340,7 +340,7 @@ class CheckAuthor extends Command
      *
      * @throws \RuntimeException If the git root could not determined.
      */
-    private function determineGitRoot($path)
+    private function determineGitRoot(string $path): string
     {
         // @codingStandardsIgnoreStart
         while (\strlen($path) > 1) {

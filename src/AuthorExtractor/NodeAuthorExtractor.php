@@ -27,6 +27,7 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\PatchingExtractor;
 
+use Symfony\Component\Finder\Finder;
 use function array_shift;
 use function explode;
 use function sprintf;
@@ -44,7 +45,7 @@ class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    protected function buildFinder()
+    protected function buildFinder(): Finder
     {
         return $this->setupFinder()->name('packages.json');
     }

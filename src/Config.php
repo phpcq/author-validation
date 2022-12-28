@@ -341,7 +341,7 @@ class Config
      *
      * @return Config
      */
-    public function addCopyLeft(string $author, $pattern)
+    public function addCopyLeft(string $author, $pattern): Config
     {
         if (is_array($pattern)) {
             foreach ($pattern as $singlePattern) {
