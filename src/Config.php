@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,7 +15,7 @@
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -29,6 +29,7 @@ use Symfony\Component\Yaml\Yaml;
  * Configuration class that reads the .check-authors.yml file.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Config
 {
@@ -312,13 +313,13 @@ class Config
     /**
      * Check if an author is aliased.
      *
-     * @param string $potentialIgnoredAuthor The author to check.
+     * @param string $ignoredAuthor The potential ignored author to check.
      *
      * @return bool
      */
-    public function isAuthorIgnored($potentialIgnoredAuthor)
+    public function isAuthorIgnored($ignoredAuthor)
     {
-        return isset($this->ignoredAuthors[$this->arrayKey($potentialIgnoredAuthor)]);
+        return isset($this->ignoredAuthors[$this->arrayKey($ignoredAuthor)]);
     }
 
     /**

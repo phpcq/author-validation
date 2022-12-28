@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,7 +15,7 @@
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -706,22 +706,21 @@ class GitAuthorExtractor implements AuthorExtractor
             return;
         }
 
-        $fromLastCommit        = $this->commitCollection[$logItem['commit']]['parent'];
-        $fromFileContent       = $this->getFileContent($fromLastCommit . ':' . $logItem['from'], $git);
-        $fromFileContentLength = \strlen($fromFileContent);
+        $fromLastCommit    = $this->commitCollection[$logItem['commit']]['parent'];
+        $fromContent       = $this->getFileContent($fromLastCommit . ':' . $logItem['from'], $git);
+        $fromContentLength = \strlen($fromContent);
 
-        $toFileContent       = $this->getFileContent($logItem['commit'] . ':' . $logItem['to'], $git);
-        $toFileContentLength = \strlen($toFileContent);
+        $toContent       = $this->getFileContent($logItem['commit'] . ':' . $logItem['to'], $git);
+        $toContentLength = \strlen($toContent);
 
-        if ($fromFileContentLength === $toFileContentLength) {
+        if ($fromContentLength === $toContentLength) {
             $fileHistory[\md5($logItem['from'])] = $logItem['from'];
 
             return;
         }
 
-        $tempFrom =
-            $this->createTempFile($logItem['commit'] . ':' . $logItem['from'], $fromFileContent);
-        $tempTo   = $this->createTempFile($logItem['commit'] . ':' . $logItem['to'], $toFileContent);
+        $tempFrom = $this->createTempFile($logItem['commit'] . ':' . $logItem['from'], $fromContent);
+        $tempTo   = $this->createTempFile($logItem['commit'] . ':' . $logItem['to'], $toContent);
 
         $detector = new Detector(new DefaultStrategy());
         $result   = $detector->copyPasteDetection([$tempFrom, $tempTo], 5, 35);
