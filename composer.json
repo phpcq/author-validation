@@ -6,7 +6,7 @@
     {
       "name": "Christian Schiffler",
       "email": "c.schiffler@cyberspectrum.de",
-      "homepage": "http://www.cyberspectrum.de",
+      "homepage": "https://www.cyberspectrum.de",
       "role": "Developer"
     },
     {
@@ -18,18 +18,8 @@
   ],
   "support": {
     "issues": "https://github.com/phpcq/author-validation/issues",
-    "source": "https://github.com/phpcq/author-validation",
-    "irc": "irc://irc.freenode.org/phpcq"
-  },
-  "autoload": {
-    "psr-4": {
-      "PhpCodeQuality\\AuthorValidation\\": "src"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "PhpCodeQuality\\AuthorValidation\\Test\\": "tests"
-    }
+    "irc": "irc://irc.freenode.org/phpcq",
+    "source": "https://github.com/phpcq/author-validation"
   },
   "require": {
     "php": "^7.4",
@@ -49,6 +39,19 @@
   "require-dev": {
     "phpcq/runner-bootstrap": "^1.0@dev"
   },
+  "autoload": {
+    "psr-4": {
+      "PhpCodeQuality\\AuthorValidation\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "PhpCodeQuality\\AuthorValidation\\Test\\": "tests"
+    }
+  },
+  "bin": [
+    "bin/check-author.php"
+  ],
   "config": {
     "sort-packages": true
   },
@@ -56,8 +59,5 @@
     "branch-alias": {
       "dev-release/2.0.0": "2.0.x-dev"
     }
-  },
-  "bin": [
-    "bin/check-author.php"
-  ]
+  }
 }
