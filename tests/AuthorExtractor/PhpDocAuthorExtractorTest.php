@@ -55,7 +55,7 @@ class PhpDocAuthorExtractorTest extends TestCase
             ]
         );
 
-        $this->assertStringEqualsFile(
+        static::assertStringEqualsFile(
             __DIR__ . '/Fixtures/phpdoc-authors1-3.php',
             $result
         );
@@ -78,7 +78,7 @@ class PhpDocAuthorExtractorTest extends TestCase
             ]
         );
 
-        $this->assertStringEqualsFile(
+        static::assertStringEqualsFile(
             __DIR__ . '/Fixtures/phpdoc-authors4-5.php',
             $result
         );
@@ -105,7 +105,7 @@ class PhpDocAuthorExtractorTest extends TestCase
             ]
         );
 
-        $this->assertStringEqualsFile(
+        static::assertStringEqualsFile(
             __DIR__ . '/Fixtures/phpdoc-authors1-6.php',
             $result
         );
