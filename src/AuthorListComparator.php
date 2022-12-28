@@ -23,8 +23,18 @@
 
 namespace PhpCodeQuality\AuthorValidation;
 
+use Diff;
+use Diff_Renderer_Abstract;
+use Diff_Renderer_Text_Unified;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
+
+use function array_diff_key;
+use function array_intersect;
+use function count;
+use function explode;
+use function implode;
+use function sprintf;
 
 /**
  * Class for comparing two author lists against each other.
@@ -89,7 +99,7 @@ class AuthorListComparator
      */
     public function shallGeneratePatches($flag = true)
     {
-        $this->diff = $flag ? new \Diff_Renderer_Text_Unified() : null;
+        $this->diff = $flag ? new Diff_Renderer_Text_Unified() : null;
 
         return $this;
     }
@@ -121,9 +131,9 @@ class AuthorListComparator
             return false;
         }
 
-        $original = \explode("\n", $extractor->getBuffer($path));
-        $new      = \explode("\n", $extractor->getBuffer($path, $wantedAuthors));
-        $diff     = new \Diff($original, $new);
+        $original = explode("\n", $extractor->getBuffer($path));
+        $new      = explode("\n", $extractor->getBuffer($path, $wantedAuthors));
+        $diff     = new Diff($original, $new);
         $patch    = $diff->render($this->diff);
 
         if (empty($patch)) {
@@ -165,7 +175,7 @@ class AuthorListComparator
     private function determineSuperfluous($mentionedAuthors, $wantedAuthors, $path)
     {
         $superfluous = [];
-        foreach (\array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
+        foreach (array_diff_key($mentionedAuthors, $wantedAuthors) as $key => $author) {
             if (!$this->config->isCopyLeftAuthor($author, $path)) {
                 $superfluous[$key] = $author;
             }
@@ -195,7 +205,7 @@ class AuthorListComparator
         if ($mentionedAuthors === null) {
             if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $this->output->writeln(
-                    \sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
+                    sprintf('Skipped check of <info>%s</info> as it is not present.', $path)
                 );
             }
 
@@ -207,11 +217,11 @@ class AuthorListComparator
         }
 
         $superfluousMentions = $this->determineSuperfluous($mentionedAuthors, $wantedAuthors, $path);
-        $missingMentions     = \array_diff_key($wantedAuthors, $mentionedAuthors);
+        $missingMentions     = array_diff_key($wantedAuthors, $mentionedAuthors);
 
-        if (\count($superfluousMentions)) {
+        if (count($superfluousMentions)) {
             $this->output->writeln(
-                \sprintf(
+                sprintf(
                     PHP_EOL .
                     PHP_EOL .
                     'The file <info>%s</info> is mentioning superfluous author(s):' .
@@ -219,15 +229,15 @@ class AuthorListComparator
                     '<comment>%s</comment>' .
                     PHP_EOL,
                     $path,
-                    \implode(PHP_EOL, $superfluousMentions)
+                    implode(PHP_EOL, $superfluousMentions)
                 )
             );
             $validates = false;
         }
 
-        if (\count($missingMentions)) {
+        if (count($missingMentions)) {
             $this->output->writeln(
-                \sprintf(
+                sprintf(
                     PHP_EOL .
                     PHP_EOL .
                     'The file <info>%s</info> is not mentioning its author(s):' .
@@ -235,15 +245,15 @@ class AuthorListComparator
                     '<comment>%s</comment>' .
                     PHP_EOL,
                     $path,
-                    \implode(PHP_EOL, $missingMentions)
+                    implode(PHP_EOL, $missingMentions)
                 )
             );
             $validates = false;
         }
 
-        if (\count($multipleAuthors)) {
+        if (count($multipleAuthors)) {
             $this->output->writeln(
-                \sprintf(
+                sprintf(
                     PHP_EOL .
                     PHP_EOL .
                     'The file <info>%s</info> multiple author(s):' .
@@ -251,7 +261,7 @@ class AuthorListComparator
                     '<comment>%s</comment>' .
                     PHP_EOL,
                     $path,
-                    \implode(PHP_EOL, $multipleAuthors)
+                    implode(PHP_EOL, $multipleAuthors)
                 )
             );
 
@@ -284,10 +294,10 @@ class AuthorListComparator
     {
         $shouldPaths  = $should->getFilePaths();
         $currentPaths = $current->getFilePaths();
-        $allPaths     = \array_intersect($shouldPaths, $currentPaths);
+        $allPaths     = array_intersect($shouldPaths, $currentPaths);
         $validates    = true;
 
-        $progressBar = new ProgressBar($this->output, \count($allPaths));
+        $progressBar = new ProgressBar($this->output, count($allPaths));
         if ($this->useProgressBar) {
             $progressBar->start();
             $progressBar->setMessage('Start author validation.');

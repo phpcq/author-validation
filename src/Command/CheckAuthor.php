@@ -41,6 +41,15 @@ use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use function array_filter;
+use function array_map;
+use function array_values;
+use function dirname;
+use function getenv;
+use function is_file;
+use function posix_isatty;
+use function rtrim;
+
 /**
  * Class to check the mentioned authors.
  *
@@ -228,14 +237,14 @@ class CheckAuthor extends Command
         $config = new Config();
 
         if (!$input->getOption('do-not-ignore-well-known-bots')) {
-            $configFile = \dirname(\dirname(__DIR__))
+            $configFile = dirname(dirname(__DIR__))
                 . DIRECTORY_SEPARATOR . 'defaults'
                 . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
             $config->addFromYml($configFile);
         }
 
         $configFile = $input->getOption('config');
-        if (\is_file($configFile)) {
+        if (is_file($configFile)) {
             $config->addFromYml($configFile);
         }
 
@@ -243,10 +252,10 @@ class CheckAuthor extends Command
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
             ->includePaths(
-                \array_filter(\array_map('realpath', $input->getArgument('include')))
+                array_filter(array_map('realpath', $input->getArgument('include')))
             );
 
-        $paths = \array_values($config->getIncludedPaths());
+        $paths = array_values($config->getIncludedPaths());
         $git   = new GitRepository($this->determineGitRoot($paths[0]));
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $git->getConfig()->setLogger(
@@ -254,11 +263,11 @@ class CheckAuthor extends Command
             );
         }
 
-        $cacheDir = \rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
-            ? \getenv('HOMEDRIVE') . \getenv('HOMEPATH')
-            : \getenv('HOME'))) ? $tmpDir : \sys_get_temp_dir()), '\\/');
+        $cacheDir = rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
+            ? getenv('HOMEDRIVE') . getenv('HOMEPATH')
+            : getenv('HOME'))) ? $tmpDir : \sys_get_temp_dir()), '\\/');
         if ($input->getOption('cache-dir')) {
-            $cacheDir = \rtrim($input->getOption('cache-dir'), '/');
+            $cacheDir = rtrim($input->getOption('cache-dir'), '/');
         }
         $cacheDir .= '/.cache/phpcq-author-validation';
 
@@ -275,7 +284,7 @@ class CheckAuthor extends Command
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
         $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool, $git);
-        $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress') && \posix_isatty(STDOUT);
+        $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress') && posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
 
@@ -330,7 +339,7 @@ class CheckAuthor extends Command
                 return $path;
             }
 
-            $path = \dirname($path);
+            $path = dirname($path);
         }
 
         throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));

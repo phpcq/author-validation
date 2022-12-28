@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,7 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     David Molineus <david.molineus@netzmacht.de>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -25,6 +25,10 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Bit3\GitPhp\GitRepository;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Finder\Finder;
+
+use function array_map;
+use function preg_replace;
+use function preg_split;
 
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
@@ -55,11 +59,11 @@ class GitProjectAuthorExtractor implements AuthorExtractor
         }
 
         // remove commit sumary of author list
-        return \array_map(
+        return array_map(
             function ($author) {
-                return \preg_replace('~\s*([\d]+)\s+(.*)~', '$2', $author);
+                return preg_replace('~\s*([\d]+)\s+(.*)~', '$2', $author);
             },
-            \preg_split('~[\r\n]+~', $authors)
+            preg_split('~[\r\n]+~', $authors)
         );
     }
 

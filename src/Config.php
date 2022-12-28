@@ -23,7 +23,16 @@
 
 namespace PhpCodeQuality\AuthorValidation;
 
+use InvalidArgumentException;
 use Symfony\Component\Yaml\Yaml;
+
+use function array_values;
+use function file_get_contents;
+use function fnmatch;
+use function is_array;
+use function is_readable;
+use function strtolower;
+use function trim;
 
 /**
  * Configuration class that reads the .check-authors.yml file.
@@ -41,14 +50,14 @@ class Config
      *
      * @var array
      */
-    protected $mapping = [];
+    protected array $mapping = [];
 
     /**
      * List of authors to be ignored.
      *
      * @var array
      */
-    protected $ignoredAuthors = [];
+    protected array $ignoredAuthors = [];
 
     /**
      * List of copy-left authors.
@@ -58,7 +67,7 @@ class Config
      *
      * @var array
      */
-    protected $copyLeft = [];
+    protected array $copyLeft = [];
 
     /**
      * List of copy-left authors.
@@ -68,21 +77,21 @@ class Config
      *
      * @var array
      */
-    protected $copyLeftReal = [];
+    protected array $copyLeftReal = [];
 
     /**
      * List of paths to include.
      *
      * @var array
      */
-    protected $include = [];
+    protected array $include = [];
 
     /**
      * List of paths to exclude.
      *
      * @var array
      */
-    protected $exclude = [];
+    protected array $exclude = [];
 
     /**
      * Author metadata.
@@ -92,7 +101,7 @@ class Config
      *
      * @var array
      */
-    protected $metadata = [];
+    protected array $metadata = [];
 
     /**
      * Create a new instance.
@@ -113,9 +122,9 @@ class Config
      *
      * @return string
      */
-    private function arrayKey($author)
+    private function arrayKey(string $author): string
     {
-        return \strtolower(\trim($author));
+        return strtolower(trim($author));
     }
 
     /**
@@ -126,13 +135,13 @@ class Config
      *
      * @return bool True if the pattern matches, false otherwise.
      */
-    private function matchPattern($pathName, $pattern)
+    private function matchPattern(string $pathName, string $pattern): bool
     {
         if ($pattern[0] !== '/') {
             $pattern = '**/' . $pattern;
         }
 
-        if (\fnmatch($pattern, $pathName)) {
+        if (fnmatch($pattern, $pathName)) {
             return true;
         }
 
@@ -147,7 +156,7 @@ class Config
      *
      * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
      */
-    private function matchPatterns($pathName, $patternList)
+    private function matchPatterns(string $pathName, array $patternList)
     {
         foreach ($patternList as $pattern) {
             if ($this->matchPattern($pathName, $pattern)) {
@@ -165,15 +174,15 @@ class Config
      *
      * @return Config
      *
-     * @throws \InvalidArgumentException When the config is not readable.
+     * @throws InvalidArgumentException When the config is not readable.
      */
-    public function addFromYml($fileName)
+    public function addFromYml(string $fileName): Config
     {
-        if (!\is_readable($fileName)) {
-            throw new \InvalidArgumentException('Could not read config file: ' . $fileName);
+        if (!is_readable($fileName)) {
+            throw new InvalidArgumentException('Could not read config file: ' . $fileName);
         }
 
-        $config = Yaml::parse(\file_get_contents($fileName));
+        $config = Yaml::parse(file_get_contents($fileName));
 
         if (isset($config['mapping'])) {
             $this->addAuthorMap($config['mapping']);
@@ -210,7 +219,7 @@ class Config
      *
      * @return Config
      */
-    public function aliasAuthor($alias, $realAuthor)
+    public function aliasAuthor(string $alias, string $realAuthor): Config
     {
         $this->mapping[$this->arrayKey($alias)] = trim($realAuthor);
 
@@ -229,10 +238,10 @@ class Config
      *
      * @return Config
      */
-    public function addAuthorMap($mapping)
+    public function addAuthorMap(array $mapping): Config
     {
         foreach ($mapping as $author => $aliases) {
-            if (\is_array($aliases)) {
+            if (is_array($aliases)) {
                 foreach ($aliases as $alias) {
                     $this->aliasAuthor($alias, $author);
                 }
@@ -251,7 +260,7 @@ class Config
      *
      * @return bool
      */
-    public function isAlias($potentialAlias)
+    public function isAlias(string $potentialAlias): bool
     {
         return isset($this->mapping[$this->arrayKey($potentialAlias)]);
     }
@@ -263,7 +272,7 @@ class Config
      *
      * @return string|null
      */
-    public function getRealAuthor($author)
+    public function getRealAuthor(string $author): ?string
     {
         if ($this->isAuthorIgnored($author)) {
             return null;
@@ -287,9 +296,9 @@ class Config
      *
      * @return Config
      */
-    public function ignoreAuthor($author)
+    public function ignoreAuthor(string $author): Config
     {
-        $this->ignoredAuthors[$this->arrayKey($author)] = \trim($author);
+        $this->ignoredAuthors[$this->arrayKey($author)] = trim($author);
 
         return $this;
     }
@@ -301,9 +310,9 @@ class Config
      *
      * @return Config
      */
-    public function ignoreAuthors($authors)
+    public function ignoreAuthors(array $authors): Config
     {
-        foreach ((array) $authors as $author) {
+        foreach ($authors as $author) {
             $this->ignoreAuthor($author);
         }
 
@@ -317,7 +326,7 @@ class Config
      *
      * @return bool
      */
-    public function isAuthorIgnored($ignoredAuthor)
+    public function isAuthorIgnored(string $ignoredAuthor): bool
     {
         return isset($this->ignoredAuthors[$this->arrayKey($ignoredAuthor)]);
     }
@@ -330,9 +339,9 @@ class Config
      *
      * @return Config
      */
-    public function addCopyLeft($author, $pattern)
+    public function addCopyLeft(string $author, $pattern)
     {
-        if (\is_array($pattern)) {
+        if (is_array($pattern)) {
             foreach ($pattern as $singlePattern) {
                 $this->addCopyLeft($author, $singlePattern);
             }
@@ -353,7 +362,7 @@ class Config
      *
      * @return Config
      */
-    public function addCopyLeftAuthors($authors)
+    public function addCopyLeftAuthors(array $authors): Config
     {
         foreach ($authors as $author => $pattern) {
             $this->addCopyLeft($author, $pattern);
@@ -370,7 +379,7 @@ class Config
      *
      * @return bool
      */
-    public function isCopyLeftAuthor($author, $pathName)
+    public function isCopyLeftAuthor(string $author, string $pathName): bool
     {
         $key = $this->arrayKey($author);
         if (!isset($this->copyLeft[$key])) {
@@ -387,7 +396,7 @@ class Config
      *
      * @return string[]
      */
-    public function getCopyLeftAuthors($pathName)
+    public function getCopyLeftAuthors(string $pathName): array
     {
         $result = [];
         foreach ($this->copyLeft as $author => $paths) {
@@ -407,7 +416,7 @@ class Config
      *
      * @return Config
      */
-    public function includePath($path)
+    public function includePath(string $path): Config
     {
         $this->include[$this->arrayKey($path)] = $path;
 
@@ -421,9 +430,9 @@ class Config
      *
      * @return Config
      */
-    public function includePaths($paths)
+    public function includePaths(array $paths): Config
     {
-        foreach ((array) $paths as $path) {
+        foreach ($paths as $path) {
             $this->includePath($path);
         }
 
@@ -437,7 +446,7 @@ class Config
      *
      * @return bool
      */
-    public function isPathIncluded($path)
+    public function isPathIncluded(string $path): bool
     {
         return $this->matchPatterns($path, $this->include);
     }
@@ -447,9 +456,9 @@ class Config
      *
      * @return string[]
      */
-    public function getIncludedPaths()
+    public function getIncludedPaths(): array
     {
-        return \array_values($this->include);
+        return array_values($this->include);
     }
 
     /**
@@ -459,7 +468,7 @@ class Config
      *
      * @return Config
      */
-    public function excludePath($path)
+    public function excludePath(string $path): Config
     {
         $this->exclude[$this->arrayKey($path)] = $path;
 
@@ -473,9 +482,9 @@ class Config
      *
      * @return Config
      */
-    public function excludePaths($paths)
+    public function excludePaths(array $paths): Config
     {
-        foreach ((array) $paths as $path) {
+        foreach ($paths as $path) {
             $this->excludePath($path);
         }
 
@@ -489,7 +498,7 @@ class Config
      *
      * @return bool
      */
-    public function isPathExcluded($path)
+    public function isPathExcluded(string $path): bool
     {
         return $this->matchPatterns($path, $this->exclude);
     }
@@ -499,9 +508,9 @@ class Config
      *
      * @return string[]
      */
-    public function getExcludedPaths()
+    public function getExcludedPaths(): array
     {
-        return \array_values($this->exclude);
+        return array_values($this->exclude);
     }
 
     /**
@@ -514,7 +523,7 @@ class Config
      *
      * @return Config
      */
-    public function addAuthorsMetadata($metadata)
+    public function addAuthorsMetadata(array $metadata): Config
     {
         foreach ($metadata as $author => $data) {
             foreach ($data as $name => $value) {
@@ -533,7 +542,7 @@ class Config
      *
      * @return bool
      */
-    public function hasMetadata($author, $name)
+    public function hasMetadata(string $author, string $name): bool
     {
         return isset($this->metadata[$this->arrayKey($author)][$name]);
     }
@@ -548,7 +557,7 @@ class Config
      *
      * @return mixed
      */
-    public function getMetadata($author, $name)
+    public function getMetadata(string $author, string $name)
     {
         $author = $this->arrayKey($author);
 
@@ -568,7 +577,7 @@ class Config
      *
      * @return Config
      */
-    public function setMetadata($author, $name, $value)
+    public function setMetadata(string $author, string $name, $value): Config
     {
         $this->metadata[$this->arrayKey($author)][$name] = $value;
 

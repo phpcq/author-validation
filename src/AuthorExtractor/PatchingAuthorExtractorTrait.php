@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,13 +14,18 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
  */
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
+
+use SplFileInfo;
+
+use function array_intersect_key;
+use function array_merge;
 
 /**
  * Trait for author extraction.
@@ -36,11 +41,11 @@ trait PatchingAuthorExtractorTrait
      * @param string $path    A path obtained via a prior call to AuthorExtractor::getFilePaths().
      * @param array  $authors The new author list.
      *
-     * @return \string[]
+     * @return string[]
      */
     protected function calculateUpdatedAuthors($path, $authors)
     {
-        return \array_merge(\array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
+        return array_merge(array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
     }
 
     /**
@@ -51,7 +56,7 @@ trait PatchingAuthorExtractorTrait
         $finder = $this->buildFinder();
         $files  = [];
 
-        /** @var \SplFileInfo[] $finder */
+        /** @var SplFileInfo[] $finder */
         foreach ($finder as $file) {
             $files[] = $file->getPathname();
         }

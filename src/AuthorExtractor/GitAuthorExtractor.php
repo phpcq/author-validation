@@ -25,8 +25,34 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitRepository;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use RuntimeException;
 use SebastianBergmann\PHPCPD\Detector\Detector;
 use SebastianBergmann\PHPCPD\Detector\Strategy\DefaultStrategy;
+
+use function array_filter;
+use function array_flip;
+use function array_merge;
+use function count;
+use function dirname;
+use function explode;
+use function file_exists;
+use function fopen;
+use function fwrite;
+use function in_array;
+use function json_decode;
+use function json_encode;
+use function md5;
+use function mkdir;
+use function opendir;
+use function preg_match_all;
+use function readdir;
+use function rmdir;
+use function serialize;
+use function sprintf;
+use function strlen;
+use function sys_get_temp_dir;
+use function trim;
+use function unlink;
 
 /**
  * Extract the author information from a git repository.
@@ -109,7 +135,7 @@ class GitAuthorExtractor implements AuthorExtractor
         }
 
         $status  = (array) $git->status()->short()->getIndexStatus();
-        $relPath = (string) \substr($path, (\strlen($git->getRepositoryPath()) + 1));
+        $relPath = (string) \substr($path, (strlen($git->getRepositoryPath()) + 1));
 
         if (isset($status[$relPath]) && $status[$relPath]) {
             return true;
@@ -131,12 +157,12 @@ class GitAuthorExtractor implements AuthorExtractor
         foreach ((array) $filePath['commits'] as $commit) {
             if (
                 $this->isMergeCommit($commit)
-                || isset($authors[\md5($commit['name'])])
+                || isset($authors[md5($commit['name'])])
             ) {
                 continue;
             }
 
-            $authors[\md5($commit['name'])] = $commit;
+            $authors[md5($commit['name'])] = $commit;
         }
 
         if (isset($filePath['pathHistory'])) {
@@ -144,12 +170,12 @@ class GitAuthorExtractor implements AuthorExtractor
                 foreach ((array) $pathHistory['commits'] as $commitHistory) {
                     if (
                         $this->isMergeCommit($commitHistory)
-                        || isset($authors[\md5($commitHistory['name'])])
+                        || isset($authors[md5($commitHistory['name'])])
                     ) {
                         continue;
                     }
 
-                    $authors[\md5($commitHistory['name'])] = $commitHistory;
+                    $authors[md5($commitHistory['name'])] = $commitHistory;
                 }
             }
         }
@@ -185,7 +211,7 @@ class GitAuthorExtractor implements AuthorExtractor
             'parent'  => '%P'
         ];
 
-        return \json_encode($logFormat);
+        return json_encode($logFormat);
     }
 
     /**
@@ -199,7 +225,7 @@ class GitAuthorExtractor implements AuthorExtractor
     {
         // git show --format="%H" --quiet
         $lastCommitId = $git->show()->format('%H')->execute('--quiet');
-        $cacheId      = \md5(__FUNCTION__ . $lastCommitId);
+        $cacheId      = md5(__FUNCTION__ . $lastCommitId);
 
         if ($this->cachePool->has($cacheId)) {
             $fromCache = $this->cachePool->get($cacheId);
@@ -246,7 +272,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function matchFileInformation($result)
     {
-        \preg_match_all(
+        preg_match_all(
             "/^(?(?=[A-Z][\d]{3})(?'criteria'[A-Z])(?'index'[\d]{3})\t(?'from'.+)\t(?'to'.+)$" .
             "|(?'status'[A-Z]{1,2})\t(?'file'.+))$/m",
             $result,
@@ -276,25 +302,25 @@ class GitAuthorExtractor implements AuthorExtractor
         array &$filePathCollection
     ) {
         foreach ($logList as $log) {
-            $currentCacheId = \md5(__FUNCTION__ . $log['commit']);
+            $currentCacheId = md5(__FUNCTION__ . $log['commit']);
             if ($this->cachePool->has($currentCacheId)) {
                 $fromCurrentCache = $this->cachePool->get($currentCacheId);
 
-                $commitCollection   = \array_merge($filePathMapping, $fromCurrentCache['commitCollection']);
-                $filePathMapping    = \array_merge($filePathMapping, $fromCurrentCache['filePathMapping']);
-                $filePathCollection = \array_merge($filePathCollection, $fromCurrentCache['filePathCollection']);
+                $commitCollection   = array_merge($filePathMapping, $fromCurrentCache['commitCollection']);
+                $filePathMapping    = array_merge($filePathMapping, $fromCurrentCache['filePathMapping']);
+                $filePathCollection = array_merge($filePathCollection, $fromCurrentCache['filePathCollection']);
 
                 break;
             }
 
             $matches = $this->matchFileInformation($this->fetchNameStatusFromCommit($log['commit'], $git));
-            if (!\count($matches)) {
+            if (!count($matches)) {
                 continue;
             }
 
             $changeCollection = [];
             foreach ($matches as $match) {
-                $changeCollection[] = \array_filter(\array_filter($match), 'is_string', ARRAY_FILTER_USE_KEY);
+                $changeCollection[] = array_filter(array_filter($match), 'is_string', ARRAY_FILTER_USE_KEY);
             }
 
             $this->prepareChangeCollection(
@@ -335,8 +361,8 @@ class GitAuthorExtractor implements AuthorExtractor
             }
 
             if (isset($change['criteria'])) {
-                $changeToHash   = \md5($change['to']);
-                $changeFromHash = \md5($change['from']);
+                $changeToHash   = md5($change['to']);
+                $changeFromHash = md5($change['from']);
 
                 $commit['containedPath'][$changeToHash] = $change['to'];
                 $commit['information'][$changeToHash]   = $change;
@@ -352,7 +378,7 @@ class GitAuthorExtractor implements AuthorExtractor
                 continue;
             }
 
-            $fileHash = \md5($change['file']);
+            $fileHash = md5($change['file']);
 
             $commit['containedPath'][$fileHash] = $change['file'];
             $commit['information'][$fileHash]   = $change;
@@ -374,7 +400,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function getFilePathCollection($path)
     {
-        $key = \array_flip($this->filePathMapping)[$path];
+        $key = array_flip($this->filePathMapping)[$path];
 
         return $this->filePathCollection[$key];
     }
@@ -389,7 +415,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function setFilePathCollection($path, array $data)
     {
-        $key = \array_flip($this->filePathMapping)[$path];
+        $key = array_flip($this->filePathMapping)[$path];
 
         $this->filePathCollection[$key] = $data;
     }
@@ -428,10 +454,10 @@ class GitAuthorExtractor implements AuthorExtractor
 
         // If the commit history only merges,
         // then use the last merge commit for find the renaming file for follow the history.
-        if (\count((array) $filePath['commits']) === $this->countMergeCommits($filePath['commits'])) {
+        if (count((array) $filePath['commits']) === $this->countMergeCommits($filePath['commits'])) {
             $commit = $filePath['commits'][\array_reverse(\array_keys($filePath['commits']))[0]];
             if ($this->isMergeCommit($commit)) {
-                $parents = \explode(' ', $commit['parent']);
+                $parents = explode(' ', $commit['parent']);
 
                 $arguments = [
                     $git->getConfig()->getGitExecutablePath(),
@@ -447,7 +473,7 @@ class GitAuthorExtractor implements AuthorExtractor
                 // git diff currentCommit rightCommit --diff-filter=R --name-status --format='' -M
                 $matches = $this->matchFileInformation($this->runCustomGit($arguments, $git));
                 foreach ($matches as $match) {
-                    if (!\in_array($this->currentPath, $match)) {
+                    if (!in_array($this->currentPath, $match, true)) {
                         continue;
                     }
 
@@ -459,12 +485,12 @@ class GitAuthorExtractor implements AuthorExtractor
         }
 
         $fileHistory = $this->fetchFileHistory($this->currentPath, $git);
-        if (!\count($fileHistory)) {
+        if (!count($fileHistory)) {
             return;
         }
 
         foreach ($fileHistory as $pathHistory) {
-            $filePath['pathHistory'][\md5($pathHistory)] = $this->getFilePathCollection($pathHistory);
+            $filePath['pathHistory'][md5($pathHistory)] = $this->getFilePathCollection($pathHistory);
         }
 
         $this->setFilePathCollection($this->currentPath, $filePath);
@@ -480,7 +506,7 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function getFileContent($search, GitRepository $git)
     {
-        $cacheId = \md5(__FUNCTION__ . $search);
+        $cacheId = md5(__FUNCTION__ . $search);
         if (!$this->cachePool->has($cacheId)) {
             $fileContent = $git->show()->execute($search);
 
@@ -524,8 +550,8 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function fetchCurrentCommit(GitRepository $git)
     {
-        return \json_decode(
-            \sprintf(
+        return json_decode(
+            sprintf(
                 '[%s]',
                 // git show --format=$this->logFormat() --quiet
                 $git->show()->format($this->logFormat())->execute('--quiet')
@@ -545,13 +571,13 @@ class GitAuthorExtractor implements AuthorExtractor
     {
         $currentCommit = $this->fetchCurrentCommit($git);
 
-        $cacheId = \md5(__FUNCTION__ . \serialize($currentCommit));
+        $cacheId = md5(__FUNCTION__ . serialize($currentCommit));
 
         if (!$this->cachePool->has($cacheId)) {
-            $logList = \json_decode(
-                \sprintf(
+            $logList = json_decode(
+                sprintf(
                     '[%s]',
-                    \trim(
+                    trim(
                         // git log --simplify-merges --format=$this->logFormat()
                         $git->log()->simplifyMerges()->format($this->logFormat() . ',')->execute(),
                         ','
@@ -581,13 +607,13 @@ class GitAuthorExtractor implements AuthorExtractor
         $fileHistory = [];
         foreach ($this->fetchCommitCollectionByPath($path, $git) as $logItem) {
             // If the renaming/copy to not found in the file history, then continue the loop.
-            if (\count($fileHistory) && !\in_array($logItem['to'], $fileHistory)) {
+            if (count($fileHistory) && !in_array($logItem['to'], $fileHistory, true)) {
                 continue;
             }
 
             // If the file history empty (also by the start for the detection) and the to path not exactly the same
             // with the same path, then continue the loop.
-            if (($logItem['to'] !== $path) && !\count($fileHistory)) {
+            if (($logItem['to'] !== $path) && !count($fileHistory)) {
                 continue;
             }
 
@@ -610,19 +636,19 @@ class GitAuthorExtractor implements AuthorExtractor
         // git log --follow --name-status --format='%H' -- $path
         $log = $git->log()->follow()->revisionRange('--name-status')->revisionRange('--format=%H')->execute($path);
 
-        \preg_match_all(
+        preg_match_all(
             "/^(?'commit'.*)\n+(?'criteria'[RC])(?'index'[\d]{3})\t(?'from'.+)\t(?'to'.+)\n/m",
             $log,
             $matches,
             PREG_SET_ORDER
         );
-        if (!\count($matches)) {
+        if (!count($matches)) {
             return [];
         }
 
         $logCollection = [];
         foreach ((array) $matches as $match) {
-            $logCollection[] = \array_filter($match, 'is_string', ARRAY_FILTER_USE_KEY);
+            $logCollection[] = array_filter($match, 'is_string', ARRAY_FILTER_USE_KEY);
         }
 
         return $logCollection;
@@ -641,9 +667,9 @@ class GitAuthorExtractor implements AuthorExtractor
     {
         $currentCommit = $this->commitCollection[$logItem['commit']];
 
-        if (($logItem['index'] <= 70) && \in_array($logItem['criteria'], ['R', 'C'])) {
-            if (isset($currentCommit['information'][\md5($logItem['to'])])) {
-                $pathInformation = $currentCommit['information'][\md5($logItem['to'])];
+        if (($logItem['index'] <= 70) && in_array($logItem['criteria'], ['R', 'C'])) {
+            if (isset($currentCommit['information'][md5($logItem['to'])])) {
+                $pathInformation = $currentCommit['information'][md5($logItem['to'])];
 
                 if (isset($pathInformation['status']) && ($pathInformation['status'] === 'A')) {
                     return;
@@ -672,7 +698,7 @@ class GitAuthorExtractor implements AuthorExtractor
         }
 
         if ((int) $logItem['index'] >= 75) {
-            $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+            $fileHistory[md5($logItem['from'])] = $logItem['from'];
 
             return;
         }
@@ -690,7 +716,7 @@ class GitAuthorExtractor implements AuthorExtractor
             return;
         }
 
-        $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+        $fileHistory[md5($logItem['from'])] = $logItem['from'];
     }
 
     /**
@@ -710,13 +736,13 @@ class GitAuthorExtractor implements AuthorExtractor
 
         $fromLastCommit    = $this->commitCollection[$logItem['commit']]['parent'];
         $fromContent       = $this->getFileContent($fromLastCommit . ':' . $logItem['from'], $git);
-        $fromContentLength = \strlen($fromContent);
+        $fromContentLength = strlen($fromContent);
 
         $toContent       = $this->getFileContent($logItem['commit'] . ':' . $logItem['to'], $git);
-        $toContentLength = \strlen($toContent);
+        $toContentLength = strlen($toContent);
 
         if ($fromContentLength === $toContentLength) {
-            $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+            $fileHistory[md5($logItem['from'])] = $logItem['from'];
 
             return;
         }
@@ -731,7 +757,7 @@ class GitAuthorExtractor implements AuthorExtractor
             return;
         }
 
-        $fileHistory[\md5($logItem['from'])] = $logItem['from'];
+        $fileHistory[md5($logItem['from'])] = $logItem['from'];
     }
 
     /**
@@ -746,25 +772,25 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function createTempFile($name, $content)
     {
-        $tempDir  = \sys_get_temp_dir();
-        $fileName = \md5($name);
+        $tempDir  = sys_get_temp_dir();
+        $fileName = md5($name);
         $filePath = $tempDir . DIRECTORY_SEPARATOR . 'phpcq-author-validation' . DIRECTORY_SEPARATOR . $fileName;
 
-        if (\file_exists($filePath)) {
+        if (file_exists($filePath)) {
             return $filePath;
         }
 
         if (
-            !\file_exists(\dirname($filePath))
-            && !\mkdir($concurrentDirectory = \dirname($filePath))
+            !file_exists(dirname($filePath))
+            && !mkdir($concurrentDirectory = dirname($filePath))
             && !is_dir($concurrentDirectory)
         ) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
         }
 
-        $file = \fopen($filePath, 'wb');
+        $file = fopen($filePath, 'wb');
 
-        \fwrite($file, $content);
+        fwrite($file, $content);
 
         return $filePath;
     }
@@ -776,24 +802,24 @@ class GitAuthorExtractor implements AuthorExtractor
      */
     private function removeTempDirectory()
     {
-        $tempDir       = \sys_get_temp_dir();
+        $tempDir       = sys_get_temp_dir();
         $directoryPath = $tempDir . DIRECTORY_SEPARATOR . 'phpcq-author-validation';
 
-        if (!\file_exists($directoryPath)) {
+        if (!file_exists($directoryPath)) {
             return;
         }
 
-        $directory = \opendir($directoryPath);
+        $directory = opendir($directoryPath);
 
-        while (($file = \readdir($directory)) !== false) {
-            if (\in_array($file, ['.', '..'])) {
+        while (($file = readdir($directory)) !== false) {
+            if (in_array($file, ['.', '..'])) {
                 continue;
             }
 
-            \unlink($directoryPath . DIRECTORY_SEPARATOR . $file);
+            unlink($directoryPath . DIRECTORY_SEPARATOR . $file);
         }
 
-        \rmdir($directoryPath);
+        rmdir($directoryPath);
     }
 
     /**
@@ -808,7 +834,7 @@ class GitAuthorExtractor implements AuthorExtractor
     protected function doExtract($path)
     {
         $git               = $this->getGitRepositoryFor($path);
-        $this->currentPath = \substr($path, (\strlen($git->getRepositoryPath()) + 1));
+        $this->currentPath = \substr($path, (strlen($git->getRepositoryPath()) + 1));
 
         $this->buildFileHistory($git);
         $this->removeTempDirectory();

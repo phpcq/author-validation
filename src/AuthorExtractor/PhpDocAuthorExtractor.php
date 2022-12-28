@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,7 +15,7 @@
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -25,6 +25,20 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\PatchingExtractor;
+use Symfony\Component\Finder\Finder;
+
+use function array_filter;
+use function array_shift;
+use function count;
+use function explode;
+use function file_get_contents;
+use function implode;
+use function is_file;
+use function preg_match_all;
+use function strlen;
+use function strpos;
+use function substr;
+use function trim;
 
 /**
  * Extract the author information from a phpDoc file doc block.
@@ -54,7 +68,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      */
     protected function doExtract($path)
     {
-        if (!\preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
+        if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
             return [];
         }
 
@@ -71,18 +85,18 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      */
     public function getBuffer($path, $authors = null)
     {
-        if (!\is_file($path)) {
+        if (!is_file($path)) {
             return '';
         }
 
         // 4k ought to be enough of a file header for anyone (I hope).
-        $content = \file_get_contents($path, false, null, 0, 4096);
-        $closing = \strpos($content, '*/');
+        $content = file_get_contents($path, false, null, 0, 4096);
+        $closing = strpos($content, '*/');
         if ($closing === false) {
             return '';
         }
 
-        $docBlock = \substr($content, 0, ($closing + 3));
+        $docBlock = substr($content, 0, ($closing + 3));
 
         if ($authors) {
             return $this->setAuthors($docBlock, $this->calculateUpdatedAuthors($path, $authors));
@@ -102,18 +116,18 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     protected function setAuthors($docBlock, $authors)
     {
         $newAuthors = array_unique(array_values($authors));
-        $lines      = \explode("\n", $docBlock);
+        $lines      = explode("\n", $docBlock);
         $lastAuthor = 0;
         $indention  = ' * @author     ';
         $cleaned    = [];
 
         foreach ($lines as $number => $line) {
-            if (\strpos($line, '@author') === false) {
+            if (strpos($line, '@author') === false) {
                 continue;
             }
             $lastAuthor = $number;
-            $suffix     = \trim(\substr($line, (\strpos($line, '@author') + 7)));
-            $indention  = \substr($line, 0, (\strlen($line) - \strlen($suffix)));
+            $suffix     = trim(substr($line, (strpos($line, '@author') + 7)));
+            $indention  = substr($line, 0, (strlen($line) - strlen($suffix)));
 
             $index = $this->searchAuthor($line, $newAuthors);
 
@@ -128,7 +142,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
 
         $lines = $this->addNewAuthors($lines, $newAuthors, $cleaned, $lastAuthor, $indention);
 
-        return \implode("\n", \array_filter($lines, function ($value) {
+        return implode("\n", array_filter($lines, function ($value) {
             return null !== $value;
         }));
     }
@@ -152,14 +166,14 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
 
         // Fill the gaps we just made.
         foreach ($emptyLines as $number) {
-            if (null === $author = \array_shift($newAuthors)) {
+            if (null === ($author = array_shift($newAuthors))) {
                 break;
             }
             $lines[$number] = $indention . $author;
         }
 
-        if ((int) $lastAuthor === 0) {
-            $lastAuthor = (\count($lines) - 2);
+        if ($lastAuthor === 0) {
+            $lastAuthor = (count($lines) - 2);
         }
         if (0 === ($count = count($newAuthors))) {
             return $lines;
@@ -171,7 +185,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             array_slice($lines, $lastAuthor)
         );
 
-        while ($author = \array_shift($newAuthors)) {
+        while ($author = array_shift($newAuthors)) {
             $lines[$lastAuthor++] = $indention . $author;
         }
 
@@ -189,11 +203,11 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     private function searchAuthor($line, $authors)
     {
         foreach ($authors as $index => $author) {
-            list($name, $email) = \explode(' <', $author);
+            [$name, $email] = explode(' <', $author);
 
-            $name  = \trim($name);
-            $email = \trim(\substr($email, 0, -1));
-            if ((\strpos($line, $name) !== false) && (\strpos($line, $email) !== false)) {
+            $name  = trim($name);
+            $email = trim(substr($email, 0, -1));
+            if ((strpos($line, $name) !== false) && (strpos($line, $email) !== false)) {
                 unset($authors[$index]);
                 return $index;
             }

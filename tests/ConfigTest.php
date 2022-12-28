@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2020 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -14,7 +14,7 @@
  * @author     Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     Sven Baumann <baumann.sv@gmail.com>
- * @copyright  2014-2020 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -24,6 +24,7 @@ namespace PhpCodeQuality\AuthorValidation\Test;
 
 use PhpCodeQuality\AuthorValidation\Config;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Test the config class.
@@ -148,7 +149,7 @@ class ConfigTest extends TestCase
 
         $config = new Config();
 
-        $reflection = new \ReflectionMethod($config, 'matchPattern');
+        $reflection = new ReflectionMethod($config, 'matchPattern');
         $reflection->setAccessible(true);
 
         $this->assertTrue($reflection->invoke($config, '/a/b/z', '/a/*/z'));

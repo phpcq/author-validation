@@ -3,7 +3,7 @@
 /**
  * This file is part of phpcq/author-validation.
  *
- * (c) 2014-2018 Christian Schiffler, Tristan Lins
+ * (c) 2014-2022 Christian Schiffler, Tristan Lins
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -15,7 +15,7 @@
  * @author     Sven Baumann <baumann.sv@gmail.com>
  * @author     Tristan Lins <tristan@lins.io>
  * @author     David Molineus <david.molineus@netzmacht.de>
- * @copyright  2014-2018 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
+ * @copyright  2014-2022 Christian Schiffler <c.schiffler@cyberspectrum.de>, Tristan Lins <tristan@lins.io>
  * @license    https://github.com/phpcq/author-validation/blob/master/LICENSE MIT
  * @link       https://github.com/phpcq/author-validation
  * @filesource
@@ -25,10 +25,23 @@ namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitException;
 use Bit3\GitPhp\GitRepository;
+use ReflectionClass;
+use RuntimeException;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessUtils;
+
+use function array_map;
+use function dirname;
+use function explode;
+use function func_get_arg;
+use function implode;
+use function is_dir;
+use function rtrim;
+use function sprintf;
+use function strlen;
+use function trim;
 
 /**
  * Base trait for author extraction from a git repository.
@@ -79,21 +92,21 @@ trait GitAuthorExtractorTrait
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            \sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = \rtrim($process->getOutput(), "\r\n");
+        $output = rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
         $files = [];
-        foreach (\explode(PHP_EOL, $output) as $file) {
+        foreach (explode(PHP_EOL, $output) as $file) {
             $absolutePath = $gitDir . '/' . $file;
             if (!$this->config->isPathExcluded($absolutePath)) {
-                $files[\trim($absolutePath)] = \trim($absolutePath);
+                $files[trim($absolutePath)] = trim($absolutePath);
             }
         }
 
@@ -129,16 +142,16 @@ trait GitAuthorExtractorTrait
     private function determineGitRoot($path)
     {
         // @codingStandardsIgnoreStart
-        while (\strlen($path) > 1) {
+        while (strlen($path) > 1) {
             // @codingStandardsIgnoreEnd
-            if (\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
+            if (is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
                 return $path;
             }
 
-            $path = \dirname($path);
+            $path = dirname($path);
         }
 
-        throw new \RuntimeException('Could not determine git root, starting from ' . \func_get_arg(0));
+        throw new RuntimeException('Could not determine git root, starting from ' . func_get_arg(0));
     }
 
     /**
@@ -163,24 +176,24 @@ trait GitAuthorExtractorTrait
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
-            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
-        $output = \rtrim($process->getOutput(), "\r\n");
+        $output = rtrim($process->getOutput(), "\r\n");
 
         if (!$process->isSuccessful()) {
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
         $config = array();
-        foreach (\explode(PHP_EOL, $output) as $line) {
-            list($name, $value)   = \explode(' ', $line, 2);
-            $config[\trim($name)] = \trim($value);
+        foreach (explode(PHP_EOL, $output) as $line) {
+            [$name, $value] = explode(' ', $line, 2);
+            $config[trim($name)] = trim($value);
         }
 
         if (isset($config['user.name']) && $config['user.email']) {
-            return \sprintf('%s <%s>', $config['user.name'], $config['user.email']);
+            return sprintf('%s <%s>', $config['user.name'], $config['user.email']);
         }
 
         return '';
@@ -200,7 +213,7 @@ trait GitAuthorExtractorTrait
     {
         $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
         $git->getConfig()->getLogger()->debug(
-            \sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
+            sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
 
         $process->run();
@@ -219,17 +232,15 @@ trait GitAuthorExtractorTrait
      * @param array $arguments The command line arguments for the symfony process.
      *
      * @return array|string
-     *
-     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function prepareProcessArguments(array $arguments)
     {
-        $reflection = new \ReflectionClass(ProcessUtils::class);
+        $reflection = new ReflectionClass(ProcessUtils::class);
 
         if (!$reflection->hasMethod('escapeArgument')) {
             return $arguments;
         }
 
-        return \implode(' ', \array_map([ProcessUtils::class, 'escapeArgument'], $arguments));
+        return implode(' ', array_map([ProcessUtils::class, 'escapeArgument'], $arguments));
     }
 }
