@@ -29,6 +29,7 @@ use Symfony\Component\Finder\Finder;
 
 use function array_filter;
 use function array_shift;
+use function array_slice;
 use function count;
 use function explode;
 use function file_get_contents;

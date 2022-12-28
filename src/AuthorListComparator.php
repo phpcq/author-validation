@@ -35,6 +35,8 @@ use function count;
 use function explode;
 use function implode;
 use function sprintf;
+use function strlen;
+use function substr;
 
 /**
  * Class for comparing two author lists against each other.
@@ -143,12 +145,12 @@ class AuthorListComparator
         $patchFile = $path;
 
         foreach ($this->config->getIncludedPaths() as $prefix) {
-            $prefixLength = \strlen($prefix);
+            $prefixLength = strlen($prefix);
             if (strpos($path, $prefix) === 0) {
-                $patchFile = \substr($path, $prefixLength);
+                $patchFile = substr($path, $prefixLength);
 
                 if (strncmp($patchFile, '/', 1) === 0) {
-                    $patchFile = \substr($patchFile, 1);
+                    $patchFile = substr($patchFile, 1);
                 }
                 break;
             }
