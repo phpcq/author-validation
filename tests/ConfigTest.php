@@ -44,13 +44,13 @@ class ConfigTest extends TestCase
     {
         $config = new Config();
 
-        $config->addAuthorMap(array(
+        $config->addAuthorMap([
             'Single Source <single-real@example.org>' => 'Single Alias <single-alias@example.org>',
             'Multiple Source <multiple-real@example.org>' => [
                 'Multiple Alias1 <multiple-alias1@example.org>',
                 'Multiple Alias2 <multiple-alias2@example.org>'
             ]
-        ));
+                              ]);
 
         $this->assertFalse($config->isAlias('Single Source <single-real@example.org>'));
         $this->assertFalse($config->isAlias('Multiple Source <multiple-real@example.org>'));

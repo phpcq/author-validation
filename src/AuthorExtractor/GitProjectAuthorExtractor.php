@@ -57,7 +57,7 @@ class GitProjectAuthorExtractor implements AuthorExtractor
     private function convertAuthorList(string $authors): array
     {
         if (!$authors) {
-            return array();
+            return [];
         }
 
         // remove commit summary of author list

@@ -186,7 +186,7 @@ trait GitAuthorExtractorTrait
             throw GitException::createFromProcess('Could not execute git command', $process);
         }
 
-        $config = array();
+        $config = [];
         foreach (explode(PHP_EOL, $output) as $line) {
             [$name, $value] = explode(' ', $line, 2);
             $config[trim($name)] = trim($value);
