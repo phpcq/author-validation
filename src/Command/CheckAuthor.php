@@ -328,13 +328,13 @@ class CheckAuthor extends Command
     ) {
         if ('project' === $scope) {
             return new GitProjectAuthorExtractor($config, $error, $cache);
-        } else {
-            $extractor = new GitAuthorExtractor($config, $error, $cache);
-
-            $extractor->collectFilesWithCommits($git);
-
-            return $extractor;
         }
+
+        $extractor = new GitAuthorExtractor($config, $error, $cache);
+
+        $extractor->collectFilesWithCommits($git);
+
+        return $extractor;
     }
 
     /**
