@@ -109,7 +109,7 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
     {
         $json['authors'] = [];
         foreach ($authors as $author) {
-            list($name, $email) = explode(' <', $author);
+            [$name, $email] = explode(' <', $author);
 
             $config = [
                 'name'     => trim($name),
