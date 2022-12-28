@@ -18,3 +18,4 @@ vendor/
 # Transifex
 /.tx/
 var
+.phpunit.result.cache
