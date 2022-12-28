@@ -120,7 +120,7 @@ class GitAuthorExtractor implements AuthorExtractor
         }
 
         return array_map(
-            function ($author) {
+            static function ($author) {
                 return $author['name'] . ' <' . $author['email'] . '>';
             },
             $authors

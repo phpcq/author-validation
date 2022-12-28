@@ -145,9 +145,15 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
 
         $lines = $this->addNewAuthors($lines, $newAuthors, $cleaned, $lastAuthor, $indention);
 
-        return implode("\n", array_filter($lines, function ($value) {
-            return null !== $value;
-        }));
+        return implode(
+            "\n",
+            array_filter(
+                $lines,
+                static function ($value) {
+                    return null !== $value;
+                }
+            )
+        );
     }
 
     /**

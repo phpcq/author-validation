@@ -70,7 +70,7 @@ class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
 
         $config           = $this->config;
         $mentionedAuthors = array_map(
-            function ($author) use ($config) {
+            static function ($author) use ($config) {
                 if (isset($author['email'])) {
                     $author['name'] = sprintf(
                         '%s <%s>',

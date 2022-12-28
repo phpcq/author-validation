@@ -66,7 +66,7 @@ class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
         }
 
         $mentionedAuthors = array_map(
-            function ($author) {
+            static function ($author) {
                 if (is_string($author)) {
                     return $author;
                 }
