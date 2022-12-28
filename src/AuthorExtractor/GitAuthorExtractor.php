@@ -327,7 +327,7 @@ class GitAuthorExtractor implements AuthorExtractor
 
             $changeCollection = [];
             foreach ($matches as $match) {
-                $changeCollection[] = array_filter(array_filter($match), 'is_string', ARRAY_FILTER_USE_KEY);
+                $changeCollection[] = array_filter(array_filter($match), '\is_string', ARRAY_FILTER_USE_KEY);
             }
 
             $this->prepareChangeCollection(
@@ -655,7 +655,7 @@ class GitAuthorExtractor implements AuthorExtractor
 
         $logCollection = [];
         foreach ((array) $matches as $match) {
-            $logCollection[] = array_filter($match, 'is_string', ARRAY_FILTER_USE_KEY);
+            $logCollection[] = array_filter($match, '\is_string', ARRAY_FILTER_USE_KEY);
         }
 
         return $logCollection;
