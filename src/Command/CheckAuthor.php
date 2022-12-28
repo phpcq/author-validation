@@ -248,9 +248,9 @@ class CheckAuthor extends Command
         $config = new Config();
 
         if (!$input->getOption('do-not-ignore-well-known-bots')) {
-            $configFile = dirname(dirname(__DIR__))
-                . DIRECTORY_SEPARATOR . 'defaults'
-                . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
+            $configFile = dirname(__DIR__, 2)
+                          . DIRECTORY_SEPARATOR . 'defaults'
+                          . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
             $config->addFromYml($configFile);
         }
 
