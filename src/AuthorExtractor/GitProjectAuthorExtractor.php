@@ -103,8 +103,6 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
      *
      * @return string[]|null
-     *
-     * @throws \ReflectionException Thrown if the class does not exist.
      */
     protected function doExtract(string $path): ?array
     {

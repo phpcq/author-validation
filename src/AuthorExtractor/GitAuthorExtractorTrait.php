@@ -117,8 +117,6 @@ trait GitAuthorExtractorTrait
      * Retrieve the file path to use in reporting.
      *
      * @return array
-     *
-     * @throws \ReflectionException Thrown if the class does not exist.
      */
     public function getFilePaths(): array
     {
