@@ -18,6 +18,8 @@
  * @filesource
  */
 
+declare(strict_types=1);
+
 namespace PhpCodeQuality\AuthorValidation\Test\Console;
 
 use PhpCodeQuality\AuthorValidation\Console\Application;

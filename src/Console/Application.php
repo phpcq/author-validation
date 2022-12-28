@@ -20,6 +20,8 @@
  * @filesource
  */
 
+declare(strict_types=1);
+
 namespace PhpCodeQuality\AuthorValidation\Console;
 
 use PhpCodeQuality\AuthorValidation\Command\CheckAuthor;

@@ -20,8 +20,9 @@
  * @filesource
  */
 
-namespace PhpCodeQuality\AuthorValidation\Test\AuthorExtractor;
+declare(strict_types=1);
 
+namespace PhpCodeQuality\AuthorValidation\Test\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\Config;

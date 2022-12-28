@@ -21,6 +21,8 @@
  * @filesource
  */
 
+declare(strict_types=1);
+
 namespace PhpCodeQuality\AuthorValidation\Command;
 
 use Bit3\GitPhp\GitRepository;
