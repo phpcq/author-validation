@@ -13,10 +13,13 @@ jobs:
       fail-fast: true
       matrix:
         php: ['7.4', '8.0', '8.1', '8.2']
-        symfony: ['^4.0', '^5.0']
+        symfony: ['^4.0', '^5.0', '^6.0']
         phpcq_install: ['update']
         output: ['-o github-action -o default']
         experimental: [false]
+        exclude:
+          - php: '7.4'
+            symfony: '^6.0'
         include:
           - php: '8.3'
             symfony: '^4.0'
@@ -25,6 +28,11 @@ jobs:
             experimental: true
           - php: '8.3'
             symfony: '^5.0'
+            phpcq_install: 'update'
+            output: '-o github-action -o default'
+            experimental: true
+          - php: '8.3'
+            symfony: '^6.0'
             phpcq_install: 'update'
             output: '-o github-action -o default'
             experimental: true
