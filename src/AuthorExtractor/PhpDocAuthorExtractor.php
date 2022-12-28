@@ -76,7 +76,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
         }
 
         // 4k ought to be enough of a file header for anyone (I hope).
-        $content = \file_get_contents($path, false, null, null, 4096);
+        $content = \file_get_contents($path, false, null, 0, 4096);
         $closing = \strpos($content, '*/');
         if ($closing === false) {
             return '';
