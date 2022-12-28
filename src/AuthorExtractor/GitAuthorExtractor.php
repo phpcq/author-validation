@@ -129,7 +129,8 @@ class GitAuthorExtractor implements AuthorExtractor
 
         $authors = [];
         foreach ((array) $filePath['commits'] as $commit) {
-            if ($this->isMergeCommit($commit)
+            if (
+                $this->isMergeCommit($commit)
                 || isset($authors[\md5($commit['name'])])
             ) {
                 continue;
@@ -141,7 +142,8 @@ class GitAuthorExtractor implements AuthorExtractor
         if (isset($filePath['pathHistory'])) {
             foreach ((array) $filePath['pathHistory'] as $pathHistory) {
                 foreach ((array) $pathHistory['commits'] as $commitHistory) {
-                    if ($this->isMergeCommit($commitHistory)
+                    if (
+                        $this->isMergeCommit($commitHistory)
                         || isset($authors[\md5($commitHistory['name'])])
                     ) {
                         continue;
@@ -752,10 +754,11 @@ class GitAuthorExtractor implements AuthorExtractor
             return $filePath;
         }
 
-        if (!\file_exists(\dirname($filePath)) && !\mkdir($concurrentDirectory = \dirname($filePath))
-            && !is_dir(
-                $concurrentDirectory
-            )) {
+        if (
+            !\file_exists(\dirname($filePath))
+            && !\mkdir($concurrentDirectory = \dirname($filePath))
+            && !is_dir($concurrentDirectory)
+        ) {
             throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
         }
 

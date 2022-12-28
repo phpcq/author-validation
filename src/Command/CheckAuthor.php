@@ -172,14 +172,15 @@ class CheckAuthor extends Command
         $config,
         CacheInterface $cachePool
     ) {
+        $options = [
+            'bower'     => AuthorExtractor\BowerAuthorExtractor::class,
+            'composer'  => AuthorExtractor\ComposerAuthorExtractor::class,
+            'packages'  => AuthorExtractor\NodeAuthorExtractor::class,
+            'php-files' => AuthorExtractor\PhpDocAuthorExtractor::class,
+        ];
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = [];
-        foreach ([
-                'bower'     => AuthorExtractor\BowerAuthorExtractor::class,
-                'composer'  => AuthorExtractor\ComposerAuthorExtractor::class,
-                'packages'  => AuthorExtractor\NodeAuthorExtractor::class,
-                'php-files' => AuthorExtractor\PhpDocAuthorExtractor::class,
-            ] as $option => $class) {
+        foreach ($options as $option => $class) {
             if ($input->getOption($option)) {
                 $extractors[$option] = new $class($config, $output, $cachePool);
             }
@@ -218,7 +219,8 @@ class CheckAuthor extends Command
     {
         $error = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
-        if (!($input->getOption('php-files')
+        if (
+            !($input->getOption('php-files')
             || $input->getOption('composer')
             || $input->getOption('bower')
             || $input->getOption('packages'))
