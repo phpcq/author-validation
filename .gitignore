@@ -2,7 +2,7 @@
 .DS_Store
 Thumbs.db
 
-# IDEs 
+# IDEs
 .buildpath
 .project
 .settings/
@@ -15,7 +15,7 @@ nbproject/
 composer.lock
 vendor/
 
-# Transifex
-/.tx/
-var
+# phpcq related
+.phpcq.lock
+.phpcq
 .phpunit.result.cache
