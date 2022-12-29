@@ -104,7 +104,7 @@ class GitAuthorExtractor implements AuthorExtractor
      *
      * @var string
      */
-    private string $currentPath;
+    private string $currentPath = '';
 
     /**
      * Convert the git binary output to a valid author list.
