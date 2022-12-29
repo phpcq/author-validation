@@ -175,7 +175,9 @@ class ConfigTest extends TestCase
         $config = new Config();
 
         $config->addCopyLeft('Copy Left <user@example.org>', 'File.php');
-        $config->addCopyLeft('Copy Left <user@example.org>', ['File2.php', '/lib/**']);
+        foreach (['File2.php', '/lib/**'] as $singlePattern) {
+            $config->addCopyLeft('Copy Left <user@example.org>', $singlePattern);
+        }
         $config->addCopyLeft('Copy Left2 <user@example.org>', 'some/dir/File4.php');
 
         static::assertTrue($config->isCopyLeftAuthor('Copy Left <user@example.org>', '/some/dir/File.php'));

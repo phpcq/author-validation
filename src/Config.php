@@ -108,11 +108,11 @@ class Config
     /**
      * Create a new instance.
      *
-     * @param string|bool $configFileName The config file to use.
+     * @param string|null $configFileName The config file to use.
      */
-    public function __construct($configFileName = false)
+    public function __construct(string $configFileName = null)
     {
-        if (false !== $configFileName) {
+        if (null !== $configFileName) {
             $this->addFromYml($configFileName);
         }
     }
@@ -336,21 +336,13 @@ class Config
     /**
      * Add the the given authors to the copy-left list using the given pattern.
      *
-     * @param string       $author  The author to add.
-     * @param string|array $pattern The pattern to add to the author.
+     * @param string $author  The author to add.
+     * @param string $pattern The pattern to add to the author.
      *
      * @return Config
      */
-    public function addCopyLeft(string $author, $pattern): Config
+    public function addCopyLeft(string $author, string $pattern): Config
     {
-        if (is_array($pattern)) {
-            foreach ($pattern as $singlePattern) {
-                $this->addCopyLeft($author, $singlePattern);
-            }
-
-            return $this;
-        }
-
         $this->copyLeft[$this->arrayKey($author)][$this->arrayKey($pattern)] = $pattern;
         $this->copyLeftReal[$this->arrayKey($author)]                        = $author;
 
@@ -367,6 +359,14 @@ class Config
     public function addCopyLeftAuthors(array $authors): Config
     {
         foreach ($authors as $author => $pattern) {
+            if (is_array($pattern)) {
+                foreach ($pattern as $singlePattern) {
+                    $this->addCopyLeft($author, $singlePattern);
+                }
+
+                continue;
+            }
+
             $this->addCopyLeft($author, $pattern);
         }
 
@@ -571,11 +571,11 @@ class Config
      *
      * @param string $author The author.
      * @param string $name   Metadata name.
-     * @param mixed  $value  Metadata value.
+     * @param string $value  Metadata value.
      *
      * @return Config
      */
-    public function setMetadata(string $author, string $name, $value): Config
+    public function setMetadata(string $author, string $name, string $value): Config
     {
         $this->metadata[$this->arrayKey($author)][$name] = $value;
 
