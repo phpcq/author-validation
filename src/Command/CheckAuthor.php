@@ -26,9 +26,6 @@ declare(strict_types=1);
 namespace PhpCodeQuality\AuthorValidation\Command;
 
 use Bit3\GitPhp\GitRepository;
-use Cache\Adapter\Doctrine\DoctrineCachePool;
-use Doctrine\Common\Cache\FilesystemCache;
-use Doctrine\Common\Cache\VoidCache;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
@@ -36,6 +33,9 @@ use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
 use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -286,10 +286,10 @@ class CheckAuthor extends Command
             $error->writeln(sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
         }
 
-        $cachePool = new DoctrineCachePool(
+        $cachePool = new Psr16Cache(
             $input->getOption('no-cache')
-                ? new VoidCache()
-                : new FilesystemCache($cacheDir)
+                ? new ArrayAdapter()
+                : new FilesystemAdapter('phpcq.author-validation', 0, $cacheDir)
         );
 
         $diff         = $input->getOption('diff');

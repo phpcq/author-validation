@@ -81,6 +81,7 @@ jobs:
       # install dependencies and tools
       - name: Install composer dependencies
         run: |
+          composer require symfony/cache ${{ matrix.symfony }} --no-update
           composer require symfony/console ${{ matrix.symfony }} --no-update
           composer require symfony/finder ${{ matrix.symfony }} --no-update
           composer require symfony/process ${{ matrix.symfony }} --no-update
