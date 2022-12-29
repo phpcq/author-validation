@@ -666,13 +666,15 @@ class GitAuthorExtractor implements AuthorExtractor
     {
         $currentCommit = $this->commitCollection[$logItem['commit']];
 
-        if (($logItem['index'] <= 70) && in_array($logItem['criteria'], ['R', 'C'])) {
-            if (isset($currentCommit['information'][md5($logItem['to'])])) {
-                $pathInformation = $currentCommit['information'][md5($logItem['to'])];
+        if (
+            ($logItem['index'] <= 70)
+            && in_array($logItem['criteria'], ['R', 'C'])
+            && isset($currentCommit['information'][md5($logItem['to'])])
+        ) {
+            $pathInformation = $currentCommit['information'][md5($logItem['to'])];
 
-                if (isset($pathInformation['status']) && ('A' === $pathInformation['status'])) {
-                    return;
-                }
+            if (isset($pathInformation['status']) && ('A' === $pathInformation['status'])) {
+                return;
             }
         }
 
