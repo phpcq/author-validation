@@ -158,7 +158,7 @@ class Config
      *
      * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
      */
-    private function matchPatterns(string $pathName, array $patternList)
+    private function matchPatterns(string $pathName, array $patternList)/*: bool|string*/
     {
         foreach ($patternList as $pattern) {
             if ($this->matchPattern($pathName, $pattern)) {
@@ -559,7 +559,7 @@ class Config
      *
      * @return mixed
      */
-    public function getMetadata(string $author, string $name)
+    public function getMetadata(string $author, string $name)/*: mixed*/
     {
         $author = $this->arrayKey($author);
 

@@ -233,7 +233,7 @@ trait GitAuthorExtractorTrait
      *
      * @return array|string
      */
-    protected function prepareProcessArguments(array $arguments)
+    protected function prepareProcessArguments(array $arguments)/*: array|string*/
     {
         $reflection = new ReflectionClass(ProcessUtils::class);
 

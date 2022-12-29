@@ -212,9 +212,9 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      * @param string   $line    The author to search for.
      * @param string[] $authors The author list to search in.
      *
-     * @return false|int
+     * @return bool|int
      */
-    private function searchAuthor(string $line, array $authors)
+    private function searchAuthor(string $line, array $authors)/*: bool|int*/
     {
         foreach ($authors as $index => $author) {
             [$name, $email] = explode(' <', $author);
