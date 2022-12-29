@@ -91,7 +91,7 @@ trait GitAuthorExtractorTrait
             '--name-only'
         ];
 
-        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+        $process = new Process($arguments, $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[ccabs-repository-git] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
@@ -173,7 +173,7 @@ trait GitAuthorExtractorTrait
             'user.[name|email]'
         ];
 
-        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+        $process = new Process($arguments, $git->getRepositoryPath());
 
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
@@ -211,7 +211,7 @@ trait GitAuthorExtractorTrait
      */
     private function runCustomGit(array $arguments, GitRepository $git): string
     {
-        $process = new Process($this->prepareProcessArguments($arguments), $git->getRepositoryPath());
+        $process = new Process($arguments, $git->getRepositoryPath());
         $git->getConfig()->getLogger()->debug(
             sprintf('[git-php] exec [%s] %s', $process->getWorkingDirectory(), $process->getCommandLine())
         );
@@ -224,23 +224,5 @@ trait GitAuthorExtractorTrait
         }
 
         return $result;
-    }
-
-    /**
-     * Prepare the command line arguments for the symfony process.
-     *
-     * @param array $arguments The command line arguments for the symfony process.
-     *
-     * @return array|string
-     */
-    protected function prepareProcessArguments(array $arguments)/*: array|string*/
-    {
-        $reflection = new ReflectionClass(ProcessUtils::class);
-
-        if (!$reflection->hasMethod('escapeArgument')) {
-            return $arguments;
-        }
-
-        return implode(' ', array_map([ProcessUtils::class, 'escapeArgument'], $arguments));
     }
 }
