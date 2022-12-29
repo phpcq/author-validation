@@ -254,11 +254,7 @@ class GitAuthorExtractor implements AuthorExtractor
 
         $this->cachePool->set(
             $cacheId,
-            [
-                'commitCollection'   => $commitCollection,
-                'filePathMapping'    => $filePathMapping,
-                'filePathCollection' => $filePathCollection
-            ]
+            compact('commitCollection', 'filePathMapping', 'filePathCollection')
         );
 
         $this->commitCollection   = $commitCollection;
