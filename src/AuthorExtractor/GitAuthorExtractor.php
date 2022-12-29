@@ -670,7 +670,7 @@ class GitAuthorExtractor implements AuthorExtractor
             if (isset($currentCommit['information'][md5($logItem['to'])])) {
                 $pathInformation = $currentCommit['information'][md5($logItem['to'])];
 
-                if (isset($pathInformation['status']) && ($pathInformation['status'] === 'A')) {
+                if (isset($pathInformation['status']) && ('A' === $pathInformation['status'])) {
                     return;
                 }
             }
