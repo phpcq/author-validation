@@ -36,6 +36,31 @@ use function json_decode;
 trait JsonAuthorExtractorTrait
 {
     /**
+     * {@inheritDoc}
+     */
+    public function getBuffer(string $path, ?array $authors = null): ?string
+    {
+        if (null === $authors) {
+            return $this->fileData($path);
+        }
+
+        $json = $this->loadFile($path);
+        $json = $this->setAuthors($json, $this->calculateUpdatedAuthors($path, $authors));
+
+        return $this->encodeData($json);
+    }
+
+    /**
+     * Set the author information in the json.
+     *
+     * @param array $json    The json data.
+     * @param array $authors The authors to set in the json.
+     *
+     * @return array The updated json array.
+     */
+    abstract protected function setAuthors(array $json, array $authors): array;
+
+    /**
      * Read the .json file and return it as array.
      *
      * @param string $path A path obtained via a prior call to JsonAuthorExtractorTrait::getFilePaths().
@@ -59,31 +84,6 @@ trait JsonAuthorExtractorTrait
     protected function encodeData(array $json): string
     {
         return JsonFormatter::format($json);
-    }
-
-    /**
-     * Set the author information in the json.
-     *
-     * @param array $json    The json data.
-     * @param array $authors The authors to set in the json.
-     *
-     * @return array The updated json array.
-     */
-    abstract protected function setAuthors(array $json, array $authors): array;
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getBuffer(string $path, ?array $authors = null): ?string
-    {
-        if (null === $authors) {
-            return $this->fileData($path);
-        }
-
-        $json = $this->loadFile($path);
-        $json = $this->setAuthors($json, $this->calculateUpdatedAuthors($path, $authors));
-
-        return $this->encodeData($json);
     }
 
     /**

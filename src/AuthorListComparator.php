@@ -123,6 +123,43 @@ final class AuthorListComparator
     }
 
     /**
+     * Compare two author lists against each other.
+     *
+     * This method adds messages to the output if any problems are encountered.
+     *
+     * @param AuthorExtractor $current The author list containing the current state.
+     * @param AuthorExtractor $should  The author list containing the desired state.
+     *
+     * @return bool
+     */
+    public function compare(AuthorExtractor $current, AuthorExtractor $should): bool
+    {
+        $shouldPaths  = $should->getFilePaths();
+        $currentPaths = $current->getFilePaths();
+        $allPaths     = array_intersect($shouldPaths, $currentPaths);
+        $validates    = true;
+
+        $progressBar = new ProgressBar($this->output, count($allPaths));
+        if ($this->useProgressBar) {
+            $progressBar->start();
+            $progressBar->setMessage('Start author validation.');
+            $progressBar->setFormat('%current%/%max% [%bar%] %message% %elapsed:6s%');
+        }
+
+        foreach ($allPaths as $pathname) {
+            $validates = $this->comparePath($current, $should, $progressBar, $pathname) && $validates;
+        }
+
+        if ($this->useProgressBar) {
+            $progressBar->setMessage('Finished author validation.');
+            $progressBar->finish();
+            $this->output->writeln(PHP_EOL);
+        }
+
+        return $validates;
+    }
+
+    /**
      * Handle the patching cycle for a extractor.
      *
      * @param string          $path          The path to patch.
@@ -285,43 +322,6 @@ final class AuthorListComparator
         if ($this->useProgressBar) {
             $progressBar->advance(1);
             $progressBar->setMessage('Author validation is in progress...');
-        }
-
-        return $validates;
-    }
-
-    /**
-     * Compare two author lists against each other.
-     *
-     * This method adds messages to the output if any problems are encountered.
-     *
-     * @param AuthorExtractor $current The author list containing the current state.
-     * @param AuthorExtractor $should  The author list containing the desired state.
-     *
-     * @return bool
-     */
-    public function compare(AuthorExtractor $current, AuthorExtractor $should): bool
-    {
-        $shouldPaths  = $should->getFilePaths();
-        $currentPaths = $current->getFilePaths();
-        $allPaths     = array_intersect($shouldPaths, $currentPaths);
-        $validates    = true;
-
-        $progressBar = new ProgressBar($this->output, count($allPaths));
-        if ($this->useProgressBar) {
-            $progressBar->start();
-            $progressBar->setMessage('Start author validation.');
-            $progressBar->setFormat('%current%/%max% [%bar%] %message% %elapsed:6s%');
-        }
-
-        foreach ($allPaths as $pathname) {
-            $validates = $this->comparePath($current, $should, $progressBar, $pathname) && $validates;
-        }
-
-        if ($this->useProgressBar) {
-            $progressBar->setMessage('Finished author validation.');
-            $progressBar->finish();
-            $this->output->writeln(PHP_EOL);
         }
 
         return $validates;

@@ -52,31 +52,6 @@ final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     /**
      * {@inheritDoc}
      */
-    protected function buildFinder(): Finder
-    {
-        return $this->setupFinder()->name('*.php');
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function doExtract(string $path): array
-    {
-        if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
-            return [];
-        }
-
-        $mentionedAuthors = [];
-        foreach ((array) $matches[1] as $match) {
-            $mentionedAuthors[] = $match[0];
-        }
-
-        return $mentionedAuthors;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function getBuffer(string $path, ?array $authors = null): ?string
     {
         if (!is_file($path)) {
@@ -97,6 +72,31 @@ final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
         }
 
         return $docBlock;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function buildFinder(): Finder
+    {
+        return $this->setupFinder()->name('*.php');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function doExtract(string $path): array
+    {
+        if (!preg_match_all('/.*@author\s+(.*)\s*/', $this->getBuffer($path), $matches, PREG_OFFSET_CAPTURE)) {
+            return [];
+        }
+
+        $mentionedAuthors = [];
+        foreach ((array) $matches[1] as $match) {
+            $mentionedAuthors[] = $match[0];
+        }
+
+        return $mentionedAuthors;
     }
 
     /**

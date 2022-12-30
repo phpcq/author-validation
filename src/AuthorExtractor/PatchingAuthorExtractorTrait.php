@@ -35,22 +35,6 @@ use function array_merge;
 trait PatchingAuthorExtractorTrait
 {
     /**
-     * Calculate the updated author map.
-     *
-     * The passed authors will be used as new reference, all existing not mentioned anymore will not be contained in
-     * the result.
-     *
-     * @param string $path    A path obtained via a prior call to AuthorExtractor::getFilePaths().
-     * @param array  $authors The new author list.
-     *
-     * @return string[]
-     */
-    protected function calculateUpdatedAuthors(string $path, array $authors): array
-    {
-        return array_merge(array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
-    }
-
-    /**
      * {@inheritDoc}
      */
     public function getFilePaths(): array
@@ -64,5 +48,21 @@ trait PatchingAuthorExtractorTrait
         }
 
         return $files;
+    }
+
+    /**
+     * Calculate the updated author map.
+     *
+     * The passed authors will be used as new reference, all existing not mentioned anymore will not be contained in
+     * the result.
+     *
+     * @param string $path    A path obtained via a prior call to AuthorExtractor::getFilePaths().
+     * @param array  $authors The new author list.
+     *
+     * @return string[]
+     */
+    protected function calculateUpdatedAuthors(string $path, array $authors): array
+    {
+        return array_merge(array_intersect_key($this->extractAuthorsFor($path), $authors), $authors);
     }
 }

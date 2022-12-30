@@ -118,58 +118,6 @@ final class Config
     }
 
     /**
-     * Translate an author to a key value to be used in the lookup arrays.
-     *
-     * @param string $author The author to make a key.
-     *
-     * @return string
-     */
-    private function arrayKey(string $author): string
-    {
-        return strtolower(trim($author));
-    }
-
-    /**
-     * Match the passed path name against the pattern.
-     *
-     * @param string $pathName The path name to match.
-     * @param string $pattern  The pattern.
-     *
-     * @return bool True if the pattern matches, false otherwise.
-     */
-    private function matchPattern(string $pathName, string $pattern): bool
-    {
-        if ('/' !== $pattern[0]) {
-            $pattern = '**/' . $pattern;
-        }
-
-        if (fnmatch($pattern, $pathName)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Match the passed path name against the pattern list.
-     *
-     * @param string $pathName    The path name to match.
-     * @param array  $patternList The pattern list.
-     *
-     * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
-     */
-    private function matchPatterns(string $pathName, array $patternList)/*: bool|string*/
-    {
-        foreach ($patternList as $pattern) {
-            if ($this->matchPattern($pathName, $pattern)) {
-                return $pattern;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Retrieve the configuration file and merge it into the instance.
      *
      * @param string $fileName The filename to read.
@@ -566,5 +514,57 @@ final class Config
         $this->metadata[$this->arrayKey($author)][$name] = $value;
 
         return $this;
+    }
+
+    /**
+     * Translate an author to a key value to be used in the lookup arrays.
+     *
+     * @param string $author The author to make a key.
+     *
+     * @return string
+     */
+    private function arrayKey(string $author): string
+    {
+        return strtolower(trim($author));
+    }
+
+    /**
+     * Match the passed path name against the pattern.
+     *
+     * @param string $pathName The path name to match.
+     * @param string $pattern  The pattern.
+     *
+     * @return bool True if the pattern matches, false otherwise.
+     */
+    private function matchPattern(string $pathName, string $pattern): bool
+    {
+        if ('/' !== $pattern[0]) {
+            $pattern = '**/' . $pattern;
+        }
+
+        if (fnmatch($pattern, $pathName)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Match the passed path name against the pattern list.
+     *
+     * @param string $pathName    The path name to match.
+     * @param array  $patternList The pattern list.
+     *
+     * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
+     */
+    private function matchPatterns(string $pathName, array $patternList)/*: bool|string*/
+    {
+        foreach ($patternList as $pattern) {
+            if ($this->matchPattern($pathName, $pattern)) {
+                return $pattern;
+            }
+        }
+
+        return false;
     }
 }

@@ -118,6 +118,15 @@ trait AuthorExtractorTrait
     }
 
     /**
+     * Perform the extraction of authors.
+     *
+     * @param string $path A path obtained via a prior call to AuthorExtractorTrait::getFilePaths().
+     *
+     * @return string[]|null The author list.
+     */
+    abstract protected function doExtract(string $path): ?array;
+
+    /**
      * Ensure the list is case insensitively unique and that the authors are sorted.
      *
      * @param string[]|null $authors The authors to work on.
@@ -140,15 +149,6 @@ trait AuthorExtractorTrait
 
         return $mapped;
     }
-
-    /**
-     * Perform the extraction of authors.
-     *
-     * @param string $path A path obtained via a prior call to AuthorExtractorTrait::getFilePaths().
-     *
-     * @return string[]|null The author list.
-     */
-    abstract protected function doExtract(string $path): ?array;
 
     /**
      * Build a Symfony Finder instance that searches all included paths for files.

@@ -37,6 +37,20 @@ use Symfony\Component\Console\Input\InputInterface;
 final class Application extends BaseApplication
 {
     /**
+     * Overridden so that the application doesn't expect the command name to be the first argument.
+     *
+     * @return InputDefinition The InputDefinition instance
+     */
+    public function getDefinition(): InputDefinition
+    {
+        $inputDefinition = parent::getDefinition();
+        // clear out the normal first argument, which is the command name
+        $inputDefinition->setArguments();
+
+        return $inputDefinition;
+    }
+
+    /**
      * Gets the name of the command based on input.
      *
      * @param InputInterface $input The input interface.
@@ -64,19 +78,5 @@ final class Application extends BaseApplication
         $defaultCommands[] = new CheckAuthor();
 
         return $defaultCommands;
-    }
-
-    /**
-     * Overridden so that the application doesn't expect the command name to be the first argument.
-     *
-     * @return InputDefinition The InputDefinition instance
-     */
-    public function getDefinition(): InputDefinition
-    {
-        $inputDefinition = parent::getDefinition();
-        // clear out the normal first argument, which is the command name
-        $inputDefinition->setArguments();
-
-        return $inputDefinition;
     }
 }
