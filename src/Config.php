@@ -336,7 +336,7 @@ final class Config
             return false;
         }
 
-        return (bool) $this->matchPatterns($pathName, $this->copyLeft[$key]);
+        return null !== $this->matchPatterns($pathName, $this->copyLeft[$key]);
     }
 
     /**
@@ -350,7 +350,7 @@ final class Config
     {
         $result = [];
         foreach ($this->copyLeft as $author => $paths) {
-            if ($this->matchPatterns($pathName, $paths)) {
+            if (null !== $this->matchPatterns($pathName, $paths)) {
                 $realAuthor                           = $this->getRealAuthor($this->copyLeftReal[$author]);
                 $result[$this->arrayKey($realAuthor)] = $realAuthor;
             }
@@ -384,7 +384,7 @@ final class Config
      */
     public function isPathIncluded(string $path): bool
     {
-        return $this->matchPatterns($path, [$this->include ?? '']);
+        return null !== $this->matchPatterns($path, [$this->include ?? '']);
     }
 
     /**
@@ -436,7 +436,7 @@ final class Config
      */
     public function isPathExcluded(string $path): bool
     {
-        return $this->matchPatterns($path, $this->exclude);
+        return null !== $this->matchPatterns($path, $this->exclude);
     }
 
     /**
@@ -555,9 +555,9 @@ final class Config
      * @param string $pathName    The path name to match.
      * @param array  $patternList The pattern list.
      *
-     * @return bool|string The first matching pattern if any of the pattern matches, false otherwise.
+     * @return string|null The first matching pattern if any of the pattern matches, false otherwise.
      */
-    private function matchPatterns(string $pathName, array $patternList)/*: bool|string*/
+    private function matchPatterns(string $pathName, array $patternList): ?string
     {
         foreach ($patternList as $pattern) {
             if ($this->matchPattern($pathName, $pattern)) {
@@ -565,6 +565,6 @@ final class Config
             }
         }
 
-        return false;
+        return null;
     }
 }
