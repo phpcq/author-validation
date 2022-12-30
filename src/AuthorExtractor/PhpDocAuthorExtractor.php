@@ -126,12 +126,14 @@ final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             $index = $this->searchAuthor($line, $newAuthors);
 
             // Obsolete entry, remove it.
-            if (false === $index) {
+            if (null === $index) {
                 $lines[$number] = null;
                 $cleaned[]      = $number;
-            } else {
-                unset($newAuthors[$index]);
+
+                continue;
             }
+
+            unset($newAuthors[$index]);
         }
 
         $lines = $this->addNewAuthors($lines, $newAuthors, $cleaned, $lastAuthor, $indention);
@@ -198,14 +200,14 @@ final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     }
 
     /**
-     * Search the author in "line" in the passed array and return the index of the match or false if none matches.
+     * Search the author in "line" in the passed array and return the index of the match or null if none matches.
      *
      * @param string   $line    The author to search for.
      * @param string[] $authors The author list to search in.
      *
-     * @return bool|int
+     * @return ?int
      */
-    private function searchAuthor(string $line, array $authors)/*: bool|int*/
+    private function searchAuthor(string $line, array $authors): ?int
     {
         foreach ($authors as $index => $author) {
             [$name, $email] = explode(' <', $author);
@@ -218,6 +220,6 @@ final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
             }
         }
 
-        return false;
+        return null;
     }
 }
