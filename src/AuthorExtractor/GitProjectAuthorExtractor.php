@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use Symfony\Component\Finder\Finder;
-
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
  */
@@ -35,13 +33,6 @@ final class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
     use GitAuthorExtractorTrait;
 
     public const TYPE = 'project';
-
-    /**
-     * Optional attached finder for processing multiple files.
-     *
-     * @var Finder
-     */
-    protected Finder $finder;
 
     /**
      * {@inheritDoc}

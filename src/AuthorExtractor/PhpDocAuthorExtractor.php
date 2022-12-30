@@ -50,13 +50,6 @@ final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
     use PatchingAuthorExtractorTrait;
 
     /**
-     * The file to work on.
-     *
-     * @var string
-     */
-    protected string $filePath;
-
-    /**
      * {@inheritDoc}
      */
     protected function buildFinder(): Finder
