@@ -37,7 +37,7 @@ use function trim;
 /**
  * Extract the author information from a composer.json file.
  */
-class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
+final class ComposerAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
     use AuthorExtractorTrait;
     use PatchingAuthorExtractorTrait;

@@ -34,7 +34,7 @@ use function sprintf;
 /**
  * Extract the author information from a bower.json file.
  */
-class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
+final class BowerAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
     use AuthorExtractorTrait;
     use PatchingAuthorExtractorTrait;

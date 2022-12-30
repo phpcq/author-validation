@@ -69,7 +69,7 @@ use function sys_get_temp_dir;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class CheckAuthor extends Command
+final class CheckAuthor extends Command
 {
     /**
      * {@inheritDoc}
@@ -257,11 +257,8 @@ class CheckAuthor extends Command
      *
      * @return AuthorExtractor[]
      */
-    protected function createSourceExtractors(
-        InputInterface $input,
-        OutputInterface $output,
-        Config $config
-    ): array {
+    private function createSourceExtractors(InputInterface $input, OutputInterface $output, Config $config): array
+    {
         $options = [
             'bower'     => BowerAuthorExtractor::class,
             'composer'  => ComposerAuthorExtractor::class,

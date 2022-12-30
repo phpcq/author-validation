@@ -30,7 +30,7 @@ use function is_file;
 /**
  * Extract the author information from a git repository.
  */
-class GitAuthorExtractor implements GitTypeAuthorExtractor
+final class GitAuthorExtractor implements GitTypeAuthorExtractor
 {
     use AuthorExtractorTrait;
     use GitAuthorExtractorTrait;

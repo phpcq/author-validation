@@ -44,7 +44,7 @@ use function trim;
 /**
  * Extract the author information from a phpDoc file doc block.
  */
-class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
+final class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
     use AuthorExtractorTrait;
     use PatchingAuthorExtractorTrait;
@@ -114,7 +114,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return string The updated doc block.
      */
-    protected function setAuthors(string $docBlock, array $authors): string
+    private function setAuthors(string $docBlock, array $authors): string
     {
         $newAuthors = array_unique(array_values($authors));
         $lines      = explode("\n", $docBlock);
@@ -165,7 +165,7 @@ class PhpDocAuthorExtractor implements AuthorExtractor, PatchingExtractor
      *
      * @return array
      */
-    protected function addNewAuthors(
+    private function addNewAuthors(
         array $lines,
         array $newAuthors,
         array $emptyLines,

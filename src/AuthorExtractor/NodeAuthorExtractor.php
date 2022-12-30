@@ -35,7 +35,7 @@ use function trim;
 /**
  * Extract the author information from a nodeJs packages.json file.
  */
-class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
+final class NodeAuthorExtractor implements AuthorExtractor, PatchingExtractor
 {
     use AuthorExtractorTrait;
     use PatchingAuthorExtractorTrait;

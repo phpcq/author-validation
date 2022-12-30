@@ -350,7 +350,7 @@ final class GitRepository
      *
      * @return array
      */
-    private function fetchCommitCollectionByPath(string $path): array
+    public function fetchCommitCollectionByPath(string $path): array
     {
         // git log --follow --name-status --format='%H' -- $path
         $log =

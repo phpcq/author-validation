@@ -34,7 +34,7 @@ use Symfony\Component\Console\Input\InputInterface;
  *
  * @package PhpCodeQuality\AuthorValidation\Command
  */
-class Application extends BaseApplication
+final class Application extends BaseApplication
 {
     /**
      * Gets the name of the command based on input.

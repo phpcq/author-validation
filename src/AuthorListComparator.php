@@ -45,42 +45,42 @@ use function substr;
 /**
  * Class for comparing two author lists against each other.
  */
-class AuthorListComparator
+final class AuthorListComparator
 {
     /**
      * The configuration this extractor shall operate within.
      *
      * @var Config
      */
-    protected Config $config;
+    private Config $config;
 
     /**
      * The output to use for logging.
      *
      * @var OutputInterface
      */
-    protected OutputInterface $output;
+    private OutputInterface $output;
 
     /**
      * The diff tool to use.
      *
      * @var Diff_Renderer_Abstract|null
      */
-    protected ?Diff_Renderer_Abstract $diff;
+    private ?Diff_Renderer_Abstract $diff;
 
     /**
      * The patch file being generated.
      *
      * @var array
      */
-    protected array $patchSet;
+    private array $patchSet;
 
     /**
      * Use the progress bar.
      *
      * @var bool
      */
-    protected bool $useProgressBar;
+    private bool $useProgressBar;
 
     /**
      * Create a new instance.

@@ -29,7 +29,7 @@ use Symfony\Component\Finder\Finder;
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
  */
-class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
+final class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
 {
     use AuthorExtractorTrait;
     use GitAuthorExtractorTrait;

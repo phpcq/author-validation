@@ -38,7 +38,7 @@ use function json_encode;
  * @author Konstantin Kudryashiv <ever.zet@gmail.com>
  * @author Jordi Boggiano <j.boggiano@seld.be>
  */
-class JsonFormatter
+final class JsonFormatter
 {
     /**
      * Copied and altered from composer.

@@ -42,7 +42,7 @@ use function trim;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class Config
+final class Config
 {
     /**
      * Author mapping.
@@ -52,14 +52,14 @@ class Config
      *
      * @var array
      */
-    protected array $mapping = [];
+    private array $mapping = [];
 
     /**
      * List of authors to be ignored.
      *
      * @var array
      */
-    protected array $ignoredAuthors = [];
+    private array $ignoredAuthors = [];
 
     /**
      * List of copy-left authors.
@@ -69,7 +69,7 @@ class Config
      *
      * @var array
      */
-    protected array $copyLeft = [];
+    private array $copyLeft = [];
 
     /**
      * List of copy-left authors.
@@ -79,21 +79,21 @@ class Config
      *
      * @var array
      */
-    protected array $copyLeftReal = [];
+    private array $copyLeftReal = [];
 
     /**
      * Include path.
      *
      * @var string
      */
-    protected string $include;
+    private string $include;
 
     /**
      * List of paths to exclude.
      *
      * @var array
      */
-    protected array $exclude = [];
+    private array $exclude = [];
 
     /**
      * Author metadata.
@@ -103,7 +103,7 @@ class Config
      *
      * @var array
      */
-    protected array $metadata = [];
+    private array $metadata = [];
 
     /**
      * Create a new instance.
