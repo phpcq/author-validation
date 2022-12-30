@@ -173,73 +173,24 @@ class CheckAuthor extends Command
 
     /**
      * {@inheritDoc}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $error = $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output;
 
-        if (
-            !($input->getOption('php-files')
-              || $input->getOption('composer')
-              || $input->getOption('bower')
-              || $input->getOption('packages'))
-        ) {
+        if (false === $this->isValidationSelected($input)) {
             $error->writeln('<error>You must select at least one validation to run!</error>');
             $error->writeln('check-author.php [--php-files] [--composer] [--bower] [--packages]');
 
             return 1;
         }
 
-        $config = new Config();
-
-        if (!$input->getOption('do-not-ignore-well-known-bots')) {
-            $configFile = dirname(__DIR__, 2)
-                          . DIRECTORY_SEPARATOR . 'defaults'
-                          . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
-            $config->addFromYml($configFile);
-        }
-
-        $configFile = $input->getOption('config');
-        if (is_file($configFile)) {
-            $config->addFromYml($configFile);
-        }
-
-        $config
-            ->ignoreAuthors($input->getOption('ignore'))
-            ->excludePaths($input->getOption('exclude'))
-            ->includePath(realpath($input->getArgument('include')));
-
-        $git = new GitPhpRepository($this->determineGitRoot($config->getIncludedPath()));
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
-            $git->getConfig()->setLogger(
-                new ConsoleLogger($output)
-            );
-        }
-
-        $cacheDir = rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
-            ? getenv('HOMEDRIVE') . getenv('HOMEPATH')
-            : getenv('HOME'))) ? $tmpDir : sys_get_temp_dir()), '\\/');
-        if ($input->getOption('cache-dir')) {
-            $cacheDir = rtrim($input->getOption('cache-dir'), '/');
-        }
-        $cacheDir .= '/.cache/phpcq-author-validation';
-
-        if ($output->isVerbose()) {
-            $error->writeln(sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
-        }
-
-        $cachePool = new Psr16Cache(
-            $input->getOption('no-cache')
-                ? new ArrayAdapter()
-                : new FilesystemAdapter('phpcq.author-validation', 0, $cacheDir)
-        );
-
+        $config       = $this->createConfig($input);
+        $git          = $this->createGit($output, $config);
+        $cache        = $this->createCache($input, $output);
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool, $git);
+        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cache, $git);
         $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress') && posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
@@ -257,6 +208,21 @@ class CheckAuthor extends Command
         }
 
         return $failed ? 1 : 0;
+    }
+
+    /**
+     * Check for is a validation selected.
+     *
+     * @param InputInterface $input The console input.
+     *
+     * @return bool
+     */
+    private function isValidationSelected(InputInterface $input): bool
+    {
+        return ($input->getOption('php-files')
+                || $input->getOption('composer')
+                || $input->getOption('bower')
+                || $input->getOption('packages'));
     }
 
     /**
@@ -344,6 +310,86 @@ class CheckAuthor extends Command
         $extractor->repository()->analyze();
 
         return $extractor;
+    }
+
+    /**
+     * Create the config.
+     *
+     * @param InputInterface $input The console input.
+     *
+     * @return Config
+     */
+    private function createConfig(InputInterface $input): Config
+    {
+        $config = new Config();
+
+        if (!$input->getOption('do-not-ignore-well-known-bots')) {
+            $configFile = dirname(__DIR__, 2)
+                          . DIRECTORY_SEPARATOR . 'defaults'
+                          . DIRECTORY_SEPARATOR . 'ignore-well-known-bots.yml';
+            $config->addFromYml($configFile);
+        }
+
+        $configFile = $input->getOption('config');
+        if (is_file($configFile)) {
+            $config->addFromYml($configFile);
+        }
+
+        $config
+            ->ignoreAuthors($input->getOption('ignore'))
+            ->excludePaths($input->getOption('exclude'))
+            ->includePath(realpath($input->getArgument('include')));
+
+        return $config;
+    }
+
+    /**
+     * Create git.
+     *
+     * @param OutputInterface $output The console output.
+     * @param Config          $config The config.
+     *
+     * @return GitPhpRepository
+     */
+    private function createGit(OutputInterface $output, Config $config): GitPhpRepository
+    {
+        $git = new GitPhpRepository($this->determineGitRoot($config->getIncludedPath()));
+        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
+            $git->getConfig()->setLogger(
+                new ConsoleLogger($output)
+            );
+        }
+
+        return $git;
+    }
+
+    /**
+     * Create the cache.
+     *
+     * @param InputInterface  $input  The console input.
+     * @param OutputInterface $output The console output.
+     *
+     * @return CacheInterface
+     */
+    private function createCache(InputInterface $input, OutputInterface $output): CacheInterface
+    {
+        $cacheDir = rtrim((($tmpDir = ('\\' === PATH_SEPARATOR
+            ? getenv('HOMEDRIVE') . getenv('HOMEPATH')
+            : getenv('HOME'))) ? $tmpDir : sys_get_temp_dir()), '\\/');
+        if ($input->getOption('cache-dir')) {
+            $cacheDir = rtrim($input->getOption('cache-dir'), '/');
+        }
+        $cacheDir .= '/.cache/phpcq-author-validation';
+
+        if ($output->isVerbose()) {
+            $output->writeln(sprintf('<info>The folder "%s" is used as cache directory.</info>', $cacheDir));
+        }
+
+        return new Psr16Cache(
+            $input->getOption('no-cache')
+                ? new ArrayAdapter()
+                : new FilesystemAdapter('phpcq.author-validation', 0, $cacheDir)
+        );
     }
 
     /**
