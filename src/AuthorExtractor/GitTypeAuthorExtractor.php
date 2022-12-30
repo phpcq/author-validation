@@ -22,11 +22,20 @@ declare(strict_types=1);
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
+use PhpCodeQuality\AuthorValidation\Repository\GitRepository;
+
 /**
  * Interface for typed git author extractor.
  */
 interface GitTypeAuthorExtractor extends AuthorExtractor
 {
+    /**
+     * Call the internal git repository.
+     *
+     * @return GitRepository
+     */
+    public function repository(): GitRepository;
+
     /**
      * The type determine if file should contain authors of the file or the project.
      *

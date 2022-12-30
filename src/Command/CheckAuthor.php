@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace PhpCodeQuality\AuthorValidation\Command;
 
-use Bit3\GitPhp\GitRepository;
+use Bit3\GitPhp\GitRepository as GitPhpRepository;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\AuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor;
@@ -36,6 +36,7 @@ use PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
+use PhpCodeQuality\AuthorValidation\Repository\GitRepository;
 use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -272,7 +273,7 @@ class CheckAuthor extends Command
             );
 
         $paths = array_values($config->getIncludedPaths());
-        $git   = new GitRepository($this->determineGitRoot($paths[0]));
+        $git   = new GitPhpRepository($this->determineGitRoot($paths[0]));
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $git->getConfig()->setLogger(
                 new ConsoleLogger($output)
@@ -304,6 +305,12 @@ class CheckAuthor extends Command
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
 
+        if ($gitExtractor->repository()->hasUncommittedChanges()) {
+            $error->writeln('<error>The git repository has uncommitted changes.</error>');
+
+            return 1;
+        }
+
         $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
 
         if ($failed && $diff) {
@@ -316,11 +323,11 @@ class CheckAuthor extends Command
     /**
      * Create git author extractor for demanded scope.
      *
-     * @param string          $scope  Git author scope.
-     * @param Config          $config Author extractor config.
-     * @param OutputInterface $error  Error output.
-     * @param CacheInterface  $cache  The cache.
-     * @param GitRepository   $git    The git repository.
+     * @param string           $scope  Git author scope.
+     * @param Config           $config Author extractor config.
+     * @param OutputInterface  $error  Error output.
+     * @param CacheInterface   $cache  The cache.
+     * @param GitPhpRepository $git    The git repository.
      *
      * @return GitTypeAuthorExtractor
      */
@@ -329,15 +336,19 @@ class CheckAuthor extends Command
         Config $config,
         OutputInterface $error,
         CacheInterface $cache,
-        GitRepository $git
+        GitPhpRepository $git
     ): GitTypeAuthorExtractor {
         if ('project' === $scope) {
-            return new GitProjectAuthorExtractor($config, $error, $cache);
+            $extractor = new GitProjectAuthorExtractor($config, $error, $cache);
+            $extractor->setRepository(new GitRepository($git, $config, $cache));
+
+            return $extractor;
         }
 
         $extractor = new GitAuthorExtractor($config, $error, $cache);
+        $extractor->setRepository(new GitRepository($git, $config, $cache));
 
-        $extractor->collectFilesWithCommits($git);
+        $extractor->repository()->analyze();
 
         return $extractor;
     }

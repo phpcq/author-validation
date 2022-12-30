@@ -24,12 +24,7 @@ declare(strict_types=1);
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use Bit3\GitPhp\GitRepository;
 use Symfony\Component\Finder\Finder;
-
-use function array_map;
-use function preg_replace;
-use function preg_split;
 
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
@@ -57,58 +52,6 @@ class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
     }
 
     /**
-     * Convert the git binary output to a valid author list.
-     *
-     * @param string $authors The author list to convert.
-     *
-     * @return string[]
-     */
-    private function convertAuthorList(string $authors): array
-    {
-        if (!$authors) {
-            return [];
-        }
-
-        // remove commit summary of author list
-        return array_map(
-            static function ($author) {
-                return preg_replace('~\s*([\d]+)\s+(.*)~', '$2', $author);
-            },
-            preg_split('~[\r\n]+~', $authors)
-        );
-    }
-
-    /**
-     * Check if git repository has uncommitted modifications.
-     *
-     * @param GitRepository $git The repository to extract all files from.
-     *
-     * @return bool
-     */
-    private function hasUncommittedChanges(GitRepository $git): bool
-    {
-        $status = $git->status()->short()->getIndexStatus();
-
-        if (empty($status)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Retrieve the author list from the git repository via calling git.
-     *
-     * @param GitRepository $git The repository to extract all files from.
-     *
-     * @return string
-     */
-    private function getAuthorListFrom(GitRepository $git): string
-    {
-        return $git->shortlog()->summary()->email()->revisionRange('HEAD')->execute();
-    }
-
-    /**
      * Perform the extraction of authors.
      *
      * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
@@ -117,14 +60,12 @@ class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
      */
     protected function doExtract(string $path): ?array
     {
-        $git = $this->getGitRepositoryFor($path);
+        $authors = $this->repository->convertAuthorList(
+            $this->getType(),
+            $this->repository->fetchAuthorListFrom($this->getType())
+        );
 
-        $authors = $this->convertAuthorList($this->getAuthorListFrom($git));
-
-        // Check if repository has uncommitted changes, so that someone is currently working on it.
-        if ($this->hasUncommittedChanges($git)) {
-            $authors[] = $this->getCurrentUserInfo($git);
-        }
+        $authors[] = $this->repository->getCurrentUserInfo();
 
         return $authors;
     }
