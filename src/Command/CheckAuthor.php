@@ -238,7 +238,7 @@ class CheckAuthor extends Command
         );
 
         $diff         = $input->getOption('diff');
-        $extractors   = $this->createSourceExtractors($input, $error, $config, $cachePool);
+        $extractors   = $this->createSourceExtractors($input, $error, $config);
         $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cachePool, $git);
         $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress') && posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
@@ -288,15 +288,13 @@ class CheckAuthor extends Command
      * @param InputInterface  $input     The input interface.
      * @param OutputInterface $output    The output interface to use for logging.
      * @param Config          $config    The configuration.
-     * @param CacheInterface  $cachePool The cache.
      *
      * @return AuthorExtractor[]
      */
     protected function createSourceExtractors(
         InputInterface $input,
         OutputInterface $output,
-        Config $config,
-        CacheInterface $cachePool
+        Config $config
     ): array {
         $options = [
             'bower'     => BowerAuthorExtractor::class,
@@ -308,7 +306,7 @@ class CheckAuthor extends Command
         $extractors = [];
         foreach ($options as $option => $class) {
             if ($input->getOption($option)) {
-                $extractors[$option] = new $class($config, $output, $cachePool);
+                $extractors[$option] = new $class($config, $output);
             }
         }
 
@@ -334,13 +332,13 @@ class CheckAuthor extends Command
         GitPhpRepository $git
     ): GitTypeAuthorExtractor {
         if ('project' === $scope) {
-            $extractor = new GitProjectAuthorExtractor($config, $error, $cache);
+            $extractor = new GitProjectAuthorExtractor($config, $error);
             $extractor->setRepository(new GitRepository($git, $config, $cache));
 
             return $extractor;
         }
 
-        $extractor = new GitAuthorExtractor($config, $error, $cache);
+        $extractor = new GitAuthorExtractor($config, $error);
         $extractor->setRepository(new GitRepository($git, $config, $cache));
 
         $extractor->repository()->analyze();

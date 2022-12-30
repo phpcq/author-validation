@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use PhpCodeQuality\AuthorValidation\Config;
-use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Finder\Finder;
 
@@ -65,24 +64,15 @@ trait AuthorExtractorTrait
     protected string $ignoredAuthors;
 
     /**
-     * The cache.
-     *
-     * @var CacheInterface
-     */
-    protected CacheInterface $cachePool;
-
-    /**
      * Create a new instance.
      *
-     * @param Config          $config    The configuration this extractor shall operate with.
-     * @param OutputInterface $output    The output interface to use for logging.
-     * @param CacheInterface  $cachePool The cachePool.
+     * @param Config          $config The configuration this extractor shall operate with.
+     * @param OutputInterface $output The output interface to use for logging.
      */
-    public function __construct(Config $config, OutputInterface $output, CacheInterface $cachePool)
+    public function __construct(Config $config, OutputInterface $output)
     {
-        $this->config    = $config;
-        $this->output    = $output;
-        $this->cachePool = $cachePool;
+        $this->config = $config;
+        $this->output = $output;
     }
 
     /**
