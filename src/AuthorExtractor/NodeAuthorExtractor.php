@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
-use PhpCodeQuality\AuthorValidation\AuthorExtractor;
-use PhpCodeQuality\AuthorValidation\PatchingExtractor;
 use Symfony\Component\Finder\Finder;
 
 use function array_shift;

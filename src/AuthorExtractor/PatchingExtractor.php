@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace PhpCodeQuality\AuthorValidation;
+namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 /**
  * Interface for an author information extractor that can patch it's input.

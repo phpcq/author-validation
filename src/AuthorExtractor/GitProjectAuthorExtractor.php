@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitRepository;
-use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use Symfony\Component\Finder\Finder;
 
 use function array_map;

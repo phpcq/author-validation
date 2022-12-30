@@ -28,6 +28,8 @@ namespace PhpCodeQuality\AuthorValidation;
 use Diff;
 use Diff_Renderer_Abstract;
 use Diff_Renderer_Text_Unified;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\PatchingExtractor;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 

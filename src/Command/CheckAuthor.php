@@ -26,9 +26,13 @@ declare(strict_types=1);
 namespace PhpCodeQuality\AuthorValidation\Command;
 
 use Bit3\GitPhp\GitRepository;
-use PhpCodeQuality\AuthorValidation\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\AuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
 use PhpCodeQuality\AuthorValidation\Config;
 use Psr\SimpleCache\CacheInterface;
@@ -184,10 +188,10 @@ class CheckAuthor extends Command
         CacheInterface $cachePool
     ): array {
         $options = [
-            'bower'     => AuthorExtractor\BowerAuthorExtractor::class,
-            'composer'  => AuthorExtractor\ComposerAuthorExtractor::class,
-            'packages'  => AuthorExtractor\NodeAuthorExtractor::class,
-            'php-files' => AuthorExtractor\PhpDocAuthorExtractor::class,
+            'bower'     => BowerAuthorExtractor::class,
+            'composer'  => ComposerAuthorExtractor::class,
+            'packages'  => NodeAuthorExtractor::class,
+            'php-files' => PhpDocAuthorExtractor::class,
         ];
         // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
         $extractors = [];

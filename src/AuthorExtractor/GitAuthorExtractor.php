@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace PhpCodeQuality\AuthorValidation\AuthorExtractor;
 
 use Bit3\GitPhp\GitRepository;
-use PhpCodeQuality\AuthorValidation\AuthorExtractor;
 use RuntimeException;
 use SebastianBergmann\PHPCPD\Detector\Detector;
 use SebastianBergmann\PHPCPD\Detector\Strategy\DefaultStrategy;
