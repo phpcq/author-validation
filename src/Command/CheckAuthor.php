@@ -195,12 +195,6 @@ final class CheckAuthor extends Command
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
 
-        if ($gitExtractor->repository()->hasUncommittedChanges()) {
-            $error->writeln('<error>The git repository has uncommitted changes.</error>');
-
-            return 1;
-        }
-
         $failed = $this->handleExtractors($extractors, $gitExtractor, $comparator);
 
         if ($failed && $diff) {
