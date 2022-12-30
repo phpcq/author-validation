@@ -182,7 +182,7 @@ trait AuthorExtractorTrait
     {
         $finder = new Finder();
         $finder
-            ->in($this->config->getIncludedPaths())
+            ->in($this->config->getIncludedPath())
             ->notPath('/vendor/')
             ->files();
         foreach ($this->config->getExcludedPaths() as $excluded) {

@@ -73,11 +73,6 @@ trait GitAuthorExtractorTrait
      */
     public function getFilePaths(): array
     {
-        $files = [];
-        foreach ($this->config->getIncludedPaths() as $path) {
-            $files[] = $this->repository->fetchAllFiles();
-        }
-
-        return array_merge(...$files);
+        return $this->repository->fetchAllFiles();
     }
 }

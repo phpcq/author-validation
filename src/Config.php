@@ -82,11 +82,11 @@ class Config
     protected array $copyLeftReal = [];
 
     /**
-     * List of paths to include.
+     * Include path.
      *
-     * @var array
+     * @var string
      */
-    protected array $include = [];
+    protected string $include;
 
     /**
      * List of paths to exclude.
@@ -199,7 +199,7 @@ class Config
         }
 
         if (isset($config['include'])) {
-            $this->includePaths($config['include']);
+            $this->includePath($config['include']);
         }
 
         if (isset($config['exclude'])) {
@@ -412,7 +412,7 @@ class Config
     }
 
     /**
-     * Add path to the include list.
+     * Set include path.
      *
      * @param string $path The path to include.
      *
@@ -420,22 +420,8 @@ class Config
      */
     public function includePath(string $path): Config
     {
-        $this->include[$this->arrayKey($path)] = $path;
-
-        return $this;
-    }
-
-    /**
-     * Add paths to the include list.
-     *
-     * @param array $paths The paths to include.
-     *
-     * @return Config
-     */
-    public function includePaths(array $paths): Config
-    {
-        foreach ($paths as $path) {
-            $this->includePath($path);
+        if (false === isset($this->include)) {
+            $this->include = $path;
         }
 
         return $this;
@@ -450,17 +436,17 @@ class Config
      */
     public function isPathIncluded(string $path): bool
     {
-        return $this->matchPatterns($path, $this->include);
+        return $this->matchPatterns($path, [$this->include ?? '']);
     }
 
     /**
-     * Retrieve the list of paths to be included.
+     * Get include path.
      *
-     * @return string[]
+     * @return string
      */
-    public function getIncludedPaths(): array
+    public function getIncludedPath(): string
     {
-        return array_values($this->include);
+        return $this->include ?? '';
     }
 
     /**

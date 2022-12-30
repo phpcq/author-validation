@@ -50,15 +50,13 @@ use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-use function array_filter;
-use function array_map;
-use function array_values;
 use function dirname;
 use function func_get_arg;
 use function getenv;
 use function is_dir;
 use function is_file;
 use function posix_isatty;
+use function realpath;
 use function rtrim;
 use function sprintf;
 use function strlen;
@@ -149,9 +147,9 @@ class CheckAuthor extends Command
             )
             ->addArgument(
                 'include',
-                (InputArgument::IS_ARRAY | InputArgument::OPTIONAL),
+                InputArgument::OPTIONAL,
                 'The directory to start searching, must be a git repository or a sub dir in a git repository.',
-                ['.']
+                '.'
             )
             ->addOption(
                 'no-cache',
@@ -268,12 +266,9 @@ class CheckAuthor extends Command
         $config
             ->ignoreAuthors($input->getOption('ignore'))
             ->excludePaths($input->getOption('exclude'))
-            ->includePaths(
-                array_filter(array_map('realpath', $input->getArgument('include')))
-            );
+            ->includePath(realpath($input->getArgument('include')));
 
-        $paths = array_values($config->getIncludedPaths());
-        $git   = new GitPhpRepository($this->determineGitRoot($paths[0]));
+        $git = new GitPhpRepository($this->determineGitRoot($config->getIncludedPath()));
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_DEBUG) {
             $git->getConfig()->setLogger(
                 new ConsoleLogger($output)

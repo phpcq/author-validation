@@ -54,11 +54,9 @@ class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
     /**
      * Perform the extraction of authors.
      *
-     * @param string $path A path obtained via a prior call to AuthorExtractor::getFilePaths().
-     *
      * @return string[]|null
      */
-    protected function doExtract(string $path): ?array
+    protected function doExtract(): ?array
     {
         $authors = $this->repository->convertAuthorList(
             $this->getType(),

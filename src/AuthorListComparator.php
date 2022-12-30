@@ -148,7 +148,7 @@ class AuthorListComparator
 
         $patchFile = $path;
 
-        foreach ($this->config->getIncludedPaths() as $prefix) {
+        foreach ([$this->config->getIncludedPath()] as $prefix) {
             $prefixLength = strlen($prefix);
             if (0 === strpos($path, $prefix)) {
                 $patchFile = substr($path, $prefixLength);
