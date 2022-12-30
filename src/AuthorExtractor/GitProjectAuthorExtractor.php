@@ -54,7 +54,10 @@ final class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
             $this->repository->fetchAuthorListFrom($this->getType())
         );
 
-        $authors[] = $this->repository->getCurrentUserInfo();
+        // Check if repository has uncommitted changes, so that someone is currently working on it.
+        if ($this->repository->hasUncommittedChanges()) {
+            $authors[] = $this->repository->getCurrentUserInfo();
+        }
 
         return $authors;
     }
