@@ -38,6 +38,7 @@ use function array_intersect;
 use function count;
 use function explode;
 use function implode;
+use function ltrim;
 use function sprintf;
 use function strlen;
 use function substr;
@@ -188,11 +189,8 @@ final class AuthorListComparator
         foreach ([$this->config->getIncludedPath()] as $prefix) {
             $prefixLength = strlen($prefix);
             if (0 === strpos($path, $prefix)) {
-                $patchFile = substr($path, $prefixLength);
+                $patchFile = ltrim(substr($path, $prefixLength), '/');
 
-                if (0 === strncmp($patchFile, '/', 1)) {
-                    $patchFile = substr($patchFile, 1);
-                }
                 break;
             }
         }
