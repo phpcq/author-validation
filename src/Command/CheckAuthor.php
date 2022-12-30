@@ -81,6 +81,12 @@ class CheckAuthor extends Command
         $this
             ->setName('phpcq:check-author')
             ->setDescription('Check that all authors are mentioned in each file.')
+            ->addArgument(
+                'include',
+                InputArgument::OPTIONAL,
+                'The directory to start searching, must be a git repository or a sub dir in a git repository.',
+                '.'
+            )
             ->addOption(
                 'php-files',
                 null,
@@ -145,12 +151,6 @@ class CheckAuthor extends Command
                 'Determine if file should contain authors of the file or the project',
                 'file'
             )
-            ->addArgument(
-                'include',
-                InputArgument::OPTIONAL,
-                'The directory to start searching, must be a git repository or a sub dir in a git repository.',
-                '.'
-            )
             ->addOption(
                 'no-cache',
                 null,
@@ -172,62 +172,6 @@ class CheckAuthor extends Command
     }
 
     /**
-     * Create all source extractors as specified on the command line.
-     *
-     * @param InputInterface  $input     The input interface.
-     * @param OutputInterface $output    The output interface to use for logging.
-     * @param Config          $config    The configuration.
-     * @param CacheInterface  $cachePool The cache.
-     *
-     * @return AuthorExtractor[]
-     */
-    protected function createSourceExtractors(
-        InputInterface $input,
-        OutputInterface $output,
-        Config $config,
-        CacheInterface $cachePool
-    ): array {
-        $options = [
-            'bower'     => BowerAuthorExtractor::class,
-            'composer'  => ComposerAuthorExtractor::class,
-            'packages'  => NodeAuthorExtractor::class,
-            'php-files' => PhpDocAuthorExtractor::class,
-        ];
-        // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
-        $extractors = [];
-        foreach ($options as $option => $class) {
-            if ($input->getOption($option)) {
-                $extractors[$option] = new $class($config, $output, $cachePool);
-            }
-        }
-
-        return $extractors;
-    }
-
-    /**
-     * Process the given extractors.
-     *
-     * @param AuthorExtractor[]    $extractors The extractors.
-     * @param AuthorExtractor      $reference  The extractor to use as reference.
-     * @param AuthorListComparator $comparator The comparator to use.
-     *
-     * @return bool
-     */
-    private function handleExtractors(
-        array $extractors,
-        AuthorExtractor $reference,
-        AuthorListComparator $comparator
-    ): bool {
-        $failed = false;
-
-        foreach ($extractors as $extractor) {
-            $failed = !$comparator->compare($extractor, $reference) || $failed;
-        }
-
-        return $failed;
-    }
-
-    /**
      * {@inheritDoc}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -239,9 +183,9 @@ class CheckAuthor extends Command
 
         if (
             !($input->getOption('php-files')
-            || $input->getOption('composer')
-            || $input->getOption('bower')
-            || $input->getOption('packages'))
+              || $input->getOption('composer')
+              || $input->getOption('bower')
+              || $input->getOption('packages'))
         ) {
             $error->writeln('<error>You must select at least one validation to run!</error>');
             $error->writeln('check-author.php [--php-files] [--composer] [--bower] [--packages]');
@@ -313,6 +257,62 @@ class CheckAuthor extends Command
         }
 
         return $failed ? 1 : 0;
+    }
+
+    /**
+     * Process the given extractors.
+     *
+     * @param AuthorExtractor[]    $extractors The extractors.
+     * @param AuthorExtractor      $reference  The extractor to use as reference.
+     * @param AuthorListComparator $comparator The comparator to use.
+     *
+     * @return bool
+     */
+    private function handleExtractors(
+        array $extractors,
+        AuthorExtractor $reference,
+        AuthorListComparator $comparator
+    ): bool {
+        $failed = false;
+
+        foreach ($extractors as $extractor) {
+            $failed = !$comparator->compare($extractor, $reference) || $failed;
+        }
+
+        return $failed;
+    }
+
+    /**
+     * Create all source extractors as specified on the command line.
+     *
+     * @param InputInterface  $input     The input interface.
+     * @param OutputInterface $output    The output interface to use for logging.
+     * @param Config          $config    The configuration.
+     * @param CacheInterface  $cachePool The cache.
+     *
+     * @return AuthorExtractor[]
+     */
+    protected function createSourceExtractors(
+        InputInterface $input,
+        OutputInterface $output,
+        Config $config,
+        CacheInterface $cachePool
+    ): array {
+        $options = [
+            'bower'     => BowerAuthorExtractor::class,
+            'composer'  => ComposerAuthorExtractor::class,
+            'packages'  => NodeAuthorExtractor::class,
+            'php-files' => PhpDocAuthorExtractor::class,
+        ];
+        // Remark: a plugin system would be really nice here, so others could simply hook themselves into the checking.
+        $extractors = [];
+        foreach ($options as $option => $class) {
+            if ($input->getOption($option)) {
+                $extractors[$option] = new $class($config, $output, $cachePool);
+            }
+        }
+
+        return $extractors;
     }
 
     /**
