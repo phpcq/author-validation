@@ -34,10 +34,12 @@ use function preg_split;
 /**
  * Extract the author information from a git repository. It does not care about which file where changed.
  */
-class GitProjectAuthorExtractor implements AuthorExtractor
+class GitProjectAuthorExtractor implements GitTypeAuthorExtractor
 {
     use AuthorExtractorTrait;
     use GitAuthorExtractorTrait;
+
+    public const TYPE = 'project';
 
     /**
      * Optional attached finder for processing multiple files.
@@ -45,6 +47,14 @@ class GitProjectAuthorExtractor implements AuthorExtractor
      * @var Finder
      */
     protected Finder $finder;
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getType(): string
+    {
+        return self::TYPE;
+    }
 
     /**
      * Convert the git binary output to a valid author list.

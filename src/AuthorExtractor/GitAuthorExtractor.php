@@ -65,10 +65,12 @@ use function unlink;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class GitAuthorExtractor implements AuthorExtractor
+class GitAuthorExtractor implements GitTypeAuthorExtractor
 {
     use AuthorExtractorTrait;
     use GitAuthorExtractorTrait;
+
+    public const TYPE = 'file';
 
     /**
      * File mapping list.
@@ -104,6 +106,14 @@ class GitAuthorExtractor implements AuthorExtractor
      * @var string
      */
     private string $currentPath = '';
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getType(): string
+    {
+        return self::TYPE;
+    }
 
     /**
      * Convert the git binary output to a valid author list.

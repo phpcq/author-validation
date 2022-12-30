@@ -31,6 +31,7 @@ use PhpCodeQuality\AuthorValidation\AuthorExtractor\BowerAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\ComposerAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitProjectAuthorExtractor;
+use PhpCodeQuality\AuthorValidation\AuthorExtractor\GitTypeAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\NodeAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorExtractor\PhpDocAuthorExtractor;
 use PhpCodeQuality\AuthorValidation\AuthorListComparator;
@@ -321,7 +322,7 @@ class CheckAuthor extends Command
      * @param CacheInterface  $cache  The cache.
      * @param GitRepository   $git    The git repository.
      *
-     * @return GitAuthorExtractor|GitProjectAuthorExtractor
+     * @return GitTypeAuthorExtractor
      */
     private function createGitAuthorExtractor(
         string $scope,
@@ -329,7 +330,7 @@ class CheckAuthor extends Command
         OutputInterface $error,
         CacheInterface $cache,
         GitRepository $git
-    )/*: GitAuthorExtractor|GitProjectAuthorExtractor*/ {
+    ): GitTypeAuthorExtractor {
         if ('project' === $scope) {
             return new GitProjectAuthorExtractor($config, $error, $cache);
         }
