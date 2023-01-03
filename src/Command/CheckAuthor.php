@@ -186,11 +186,15 @@ final class CheckAuthor extends Command
         }
 
         $config       = $this->createConfig($input);
-        $git          = $this->createGit($output, $config);
-        $cache        = $this->createCache($input, $output);
         $diff         = $input->getOption('diff');
         $extractors   = $this->createSourceExtractors($input, $error, $config);
-        $gitExtractor = $this->createGitAuthorExtractor($input->getOption('scope'), $config, $error, $cache, $git);
+        $gitExtractor = $this->createGitAuthorExtractor(
+            $input->getOption('scope'),
+            $config,
+            $error,
+            $this->createCache($input, $output),
+            $this->createGit($output, $config)
+        );
         $progressBar  = !$output->isQuiet() && !$input->getOption('no-progress') && posix_isatty(STDOUT);
         $comparator   = new AuthorListComparator($config, $error, $progressBar);
         $comparator->shallGeneratePatches($diff);
